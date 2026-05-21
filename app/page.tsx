@@ -59,23 +59,51 @@ export default function HomePage() {
             Plataforma de registro clínico y seguimiento académico
           </h2>
 
-          <div className="space-y-5 text-slate-800 text-lg leading-relaxed">
-            <p>
-              Esta plataforma permite registrar procedimientos realizados durante las distintas rotaciones clínicas de Medicina Física y Rehabilitación, facilitando el seguimiento longitudinal del progreso formativo de cada residente.
-            </p>
+          <p className="text-slate-800 text-lg leading-relaxed text-center">
+            Registra procedimientos clínicos, revisa tu progreso formativo y exporta tu bitácora en formatos listos para revisión docente.
+          </p>
 
-            <p>
-              Cada procedimiento puede documentarse según modalidad de participación, tutor responsable, fecha de realización, comentarios clínicos y notas privadas, permitiendo construir una bitácora organizada, editable y exportable.
-            </p>
+          <div className="grid md:grid-cols-3 gap-4">
+            <div className="bg-slate-50 rounded-3xl p-5 border border-slate-200">
+              <h3 className="text-lg font-bold text-slate-950">
+                Registrar
+              </h3>
 
-            <p>
-              La aplicación incorpora visualización de estadísticas, seguimiento de objetivos mínimos por procedimiento, exportación en Word y PDF, edición de registros previos y respaldos automáticos mensuales.
-            </p>
+              <p className="text-slate-700 mt-2">
+                Ingresa procedimientos por rotación, fecha, tutor, modalidad y comentarios clínicos.
+              </p>
+            </div>
 
-            <p>
-              Su diseño está orientado específicamente a programas de formación en fisiatría, priorizando una experiencia simple, rápida y compatible con computador y dispositivos móviles.
-            </p>
+            <div className="bg-slate-50 rounded-3xl p-5 border border-slate-200">
+              <h3 className="text-lg font-bold text-slate-950">
+                Seguir progreso
+              </h3>
+
+              <p className="text-slate-700 mt-2">
+                Visualiza estadísticas y avance según los mínimos definidos para cada procedimiento.
+              </p>
+            </div>
+
+            <div className="bg-slate-50 rounded-3xl p-5 border border-slate-200">
+              <h3 className="text-lg font-bold text-slate-950">
+                Exportar
+              </h3>
+
+              <p className="text-slate-700 mt-2">
+                Descarga informes en Word o PDF, con respaldo mensual automático global.
+              </p>
+            </div>
           </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              window.location.href = '/nuevo'
+            }}
+            className="w-full bg-slate-900 text-white rounded-2xl p-5 text-xl font-semibold active:scale-95"
+          >
+            Registrar procedimiento
+          </button>
         </section>
       </div>
     </main>
