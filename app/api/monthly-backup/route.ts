@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { Resend } from 'resend'
-import jsPDF from 'jspdf'
-import autoTable from 'jspdf-autotable'
+import * as XLSX from 'xlsx'
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
@@ -38,82 +37,43 @@ export async function GET(request: Request) {
     })
   }
 
-  const pdf = new jsPDF({
-    orientation: 'landscape',
-    unit: 'mm',
-    format: 'a4'
-  })
+  const formatted = (data || []).map((item: any) => ({
+    Residente: item.resident_name || '',
+    Año: item.year || '',
+    Rotación: item.rotation || '',
+    Fecha: item.procedure_date || '',
+    Categoría: item.category || '',
+    Procedimiento: item.procedure_name || '',
+    Modalidad: item.mode || '',
+    Tutor: item.tutor || '',
+    Comentarios: item.comments || '',
+    'Notas privadas': item.private_notes || ''
+  }))
 
-  pdf.setFontSize(20)
+  const workbook = XLSX.utils.book_new()
 
-  pdf.text(
-    'La Riffobitácora - Respaldo Global',
-    148,
-    18,
-    { align: 'center' }
+  const worksheet = XLSX.utils.json_to_sheet(
+    formatted
   )
 
-  pdf.setFontSize(10)
-
-  pdf.text(
-    `Generado: ${new Date().toLocaleDateString('es-CL')}`,
-    14,
-    28
+  XLSX.utils.book_append_sheet(
+    workbook,
+    worksheet,
+    'Procedimientos'
   )
 
-  autoTable(pdf, {
-    startY: 36,
-
-    head: [[
-      'Residente',
-      'Fecha',
-      'Procedimiento',
-      'Modalidad',
-      'Tutor',
-      'Comentarios'
-    ]],
-
-    body: (data || []).map((item: any) => [
-      item.resident_name || '',
-      item.procedure_date || '',
-      item.procedure_name || '',
-      item.mode || '',
-      item.tutor || '',
-      item.comments || ''
-    ]),
-
-    styles: {
-      fontSize: 7,
-      cellPadding: 2,
-      overflow: 'linebreak'
-    },
-
-    headStyles: {
-      fillColor: [15, 23, 42]
-    },
-
-    columnStyles: {
-      0: { cellWidth: 35 },
-      1: { cellWidth: 22 },
-      2: { cellWidth: 50 },
-      3: { cellWidth: 22 },
-      4: { cellWidth: 35 },
-      5: { cellWidth: 90 }
-    },
-
-    margin: {
-      left: 10,
-      right: 10
-    }
+  const excelBuffer = XLSX.write(workbook, {
+    type: 'buffer',
+    bookType: 'xlsx'
   })
 
-  const pdfBase64 = Buffer.from(
-    pdf.output('arraybuffer')
-  ).toString('base64')
+  const excelBase64 =
+    Buffer.from(excelBuffer).toString('base64')
 
   const { error: emailError } =
     await resend.emails.send({
-      from: 'La Riffobitácora <onboarding@resend.dev>',
+      from:
+        'La Riffobitácora <onboarding@resend.dev>',
 
       to: 'isotoriquelme@gmail.com',
 
@@ -121,15 +81,15 @@ export async function GET(request: Request) {
         'Respaldo mensual global - La Riffobitácora',
 
       html: `
-        <p>Adjuntamos respaldo global mensual de La Riffobitácora.</p>
+        <p>Adjuntamos respaldo global mensual en Excel.</p>
       `,
 
       attachments: [
         {
           filename:
-            'La-Riffobitacora-respaldo-global.pdf',
+            'La-Riffobitacora-respaldo-global.xlsx',
 
-          content: pdfBase64
+          content: excelBase64
         }
       ]
     })
@@ -143,6 +103,7 @@ export async function GET(request: Request) {
 
   return NextResponse.json({
     ok: true,
-    total_procedures: data?.length || 0
+    total_procedures:
+      data?.length || 0
   })
 }
