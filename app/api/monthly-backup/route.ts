@@ -1,0 +1,3 @@
+process.env.SUPABASE_SERVICE_ROLE_KEY
+process.env.RESEND_API_KEY
+process.env.CRON_SECRET
