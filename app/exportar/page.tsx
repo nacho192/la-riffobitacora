@@ -13,10 +13,10 @@ import {
   TableCell,
   WidthType,
   TextRun,
-  HeadingLevel,
   AlignmentType,
   PageOrientation,
-  TableLayoutType
+  TableLayoutType,
+  ImageRun
 } from 'docx'
 
 import { supabase } from '@/lib/supabase'
@@ -58,6 +58,11 @@ export default function ExportarPage() {
     }
   }
 
+  async function loadLogo() {
+    const response = await fetch('/logo.jpg')
+    return await response.arrayBuffer()
+  }
+
   async function exportPDF() {
     setLoading(true)
 
@@ -82,30 +87,64 @@ export default function ExportarPage() {
       format: 'a4'
     })
 
+    try {
+      const logoResponse = await fetch('/logo.jpg')
+      const logoBlob = await logoResponse.blob()
+
+      const reader = new FileReader()
+
+      reader.onloadend = () => {
+        const base64data = reader.result as string
+
+        doc.addImage(
+          base64data,
+          'JPEG',
+          160,
+          10,
+          35,
+          35
+        )
+
+        buildPdfContent(doc, data, residentName)
+      }
+
+      reader.readAsDataURL(logoBlob)
+    } catch {
+      buildPdfContent(doc, data, residentName)
+    }
+  }
+
+  function buildPdfContent(
+    doc: jsPDF,
+    data: any[],
+    residentName: string
+  ) {
     doc.setFontSize(20)
 
-    doc.text('La Riffobitácora', 105, 18, {
-      align: 'center'
-    })
+    doc.text(
+      'Bitácora de Procedimientos',
+      14,
+      20
+    )
 
-    doc.setFontSize(11)
+    doc.setFontSize(12)
 
     doc.text(
-      `Residente: ${residentName}`,
+      'Medicina Física y Rehabilitación',
       14,
       28
     )
 
-    const body = (data || []).map((item: any) => [
-      item.procedure_date || '',
-      item.procedure_name || '',
-      item.mode || '',
-      item.tutor || '',
-      item.comments || ''
-    ])
+    doc.setFontSize(10)
+
+    doc.text(
+      `Residente: ${residentName}`,
+      14,
+      40
+    )
 
     autoTable(doc, {
-      startY: 35,
+      startY: 48,
 
       head: [[
         'Fecha',
@@ -115,17 +154,22 @@ export default function ExportarPage() {
         'Comentarios'
       ]],
 
-      body,
+      body: (data || []).map((item: any) => [
+        item.procedure_date || '',
+        item.procedure_name || '',
+        item.mode || '',
+        item.tutor || '',
+        item.comments || ''
+      ]),
 
       styles: {
         fontSize: 8,
         cellPadding: 2,
-        overflow: 'linebreak',
-        valign: 'middle'
+        overflow: 'linebreak'
       },
 
       headStyles: {
-        fillColor: [30, 41, 59]
+        fillColor: [15, 23, 42]
       },
 
       columnStyles: {
@@ -158,7 +202,7 @@ export default function ExportarPage() {
       finalY + 32
     )
 
-    doc.save('La-Riffobitacora.pdf')
+    doc.save('Bitacora-de-Procedimientos.pdf')
 
     setStatus('PDF generado')
     setLoading(false)
@@ -182,26 +226,7 @@ export default function ExportarPage() {
       user.email ||
       ''
 
-    const children: any[] = []
-
-    children.push(
-      new Paragraph({
-        text: 'La Riffobitácora',
-        heading: HeadingLevel.TITLE,
-        alignment: AlignmentType.CENTER
-      }),
-
-      new Paragraph({
-        text: 'Bitácora de procedimientos - Residencia de Fisiatría UDD',
-        alignment: AlignmentType.CENTER
-      }),
-
-      new Paragraph({
-        text: `Residente: ${residentName}`
-      }),
-
-      new Paragraph({ text: '' })
-    )
+    const logoBuffer = await loadLogo()
 
     const rows = [
       new TableRow({
@@ -227,31 +252,6 @@ export default function ExportarPage() {
       )
     ]
 
-    children.push(
-      new Table({
-        layout: TableLayoutType.FIXED,
-
-        width: {
-          size: TABLE_WIDTH,
-          type: WidthType.DXA
-        },
-
-        rows
-      }),
-
-      new Paragraph({ text: '' }),
-
-      new Paragraph({
-        text: 'Firma docente a cargo:'
-      }),
-
-      new Paragraph({ text: '' }),
-
-      new Paragraph({
-        text: '________________________________________'
-      })
-    )
-
     const doc = new Document({
       sections: [
         {
@@ -259,18 +259,73 @@ export default function ExportarPage() {
             page: {
               size: {
                 orientation: PageOrientation.PORTRAIT
-              },
-
-              margin: {
-                top: 700,
-                right: 700,
-                bottom: 700,
-                left: 700
               }
             }
           },
 
-          children
+          children: [
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: 'Bitácora de Procedimientos',
+                  bold: true,
+                  size: 34
+                })
+              ]
+            }),
+
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: 'Medicina Física y Rehabilitación',
+                  size: 24
+                })
+              ]
+            }),
+
+            new Paragraph({
+              alignment: AlignmentType.RIGHT,
+
+              children: [
+                new ImageRun({
+                  data: logoBuffer,
+                  transformation: {
+                    width: 120,
+                    height: 120
+                  }
+                })
+              ]
+            }),
+
+            new Paragraph({
+              text: `Residente: ${residentName}`
+            }),
+
+            new Paragraph({ text: '' }),
+
+            new Table({
+              layout: TableLayoutType.FIXED,
+
+              width: {
+                size: TABLE_WIDTH,
+                type: WidthType.DXA
+              },
+
+              rows
+            }),
+
+            new Paragraph({ text: '' }),
+
+            new Paragraph({
+              text: 'Firma docente a cargo:'
+            }),
+
+            new Paragraph({ text: '' }),
+
+            new Paragraph({
+              text: '________________________________________'
+            })
+          ]
         }
       ]
     })
@@ -282,7 +337,7 @@ export default function ExportarPage() {
     const link = document.createElement('a')
 
     link.href = url
-    link.download = 'La-Riffobitacora.docx'
+    link.download = 'Bitacora-de-Procedimientos.docx'
 
     document.body.appendChild(link)
 
@@ -325,7 +380,6 @@ export default function ExportarPage() {
           <button
             type="button"
             onClick={() => safePress(exportWord)}
-            onTouchStart={() => safePress(exportWord)}
             className="w-full bg-slate-900 text-white rounded-2xl p-5 text-xl font-semibold"
           >
             Exportar Word
@@ -334,7 +388,6 @@ export default function ExportarPage() {
           <button
             type="button"
             onClick={() => safePress(exportPDF)}
-            onTouchStart={() => safePress(exportPDF)}
             className="w-full bg-red-700 text-white rounded-2xl p-5 text-xl font-semibold"
           >
             Exportar PDF
