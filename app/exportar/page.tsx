@@ -294,7 +294,7 @@ export default function ExportarPage() {
     width: 120,
     height: 120
   }
-})
+}),
 
             new Paragraph({
               text: `Residente: ${residentName}`
