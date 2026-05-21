@@ -10,13 +10,16 @@ import {
   TableCell,
   WidthType,
   TextRun,
-  HeadingLevel
+  HeadingLevel,
+  AlignmentType,
+  PageOrientation
 } from 'docx'
 import { supabase } from '@/lib/supabase'
 
 export default function ExportarPage() {
   const [loading, setLoading] = useState(false)
   const [status, setStatus] = useState('')
+
   const lastPress = useRef(0)
 
   async function handlePress() {
@@ -25,15 +28,13 @@ export default function ExportarPage() {
     if (now - lastPress.current < 1200) return
 
     lastPress.current = now
-    setStatus('Generando Word...')
 
     await exportWord()
   }
 
   async function exportWord() {
-    if (loading) return
-
     setLoading(true)
+    setStatus('Generando documento...')
 
     const {
       data: { user }
@@ -53,15 +54,13 @@ export default function ExportarPage() {
       .order('procedure_date', { ascending: true })
 
     if (error) {
-      setStatus(error.message)
       alert(error.message)
       setLoading(false)
       return
     }
 
     if (!data || data.length === 0) {
-      setStatus('No hay procedimientos registrados')
-      alert('No hay procedimientos registrados')
+      alert('No hay procedimientos')
       setLoading(false)
       return
     }
@@ -77,14 +76,19 @@ export default function ExportarPage() {
     children.push(
       new Paragraph({
         text: 'La Riffobitácora',
-        heading: HeadingLevel.TITLE
+        heading: HeadingLevel.TITLE,
+        alignment: AlignmentType.CENTER
       }),
+
       new Paragraph({
-        text: 'Bitácora de procedimientos - Residencia de Fisiatría UDD'
+        text: 'Bitácora de procedimientos - Residencia de Fisiatría UDD',
+        alignment: AlignmentType.CENTER
       }),
+
       new Paragraph({
         text: `Residente: ${residentName}`
       }),
+
       new Paragraph({ text: '' })
     )
 
@@ -112,7 +116,6 @@ export default function ExportarPage() {
           new TableRow({
             children: [
               headerCell('Fecha'),
-              headerCell('Categoría'),
               headerCell('Procedimiento'),
               headerCell('Modalidad'),
               headerCell('Tutor'),
@@ -123,12 +126,11 @@ export default function ExportarPage() {
           ...groupedByRotation[rotation].map((item: any) =>
             new TableRow({
               children: [
-                cell(item.procedure_date || ''),
-                cell(item.category || ''),
-                cell(item.procedure_name || ''),
-                cell(item.mode || ''),
-                cell(item.tutor || ''),
-                cell(item.comments || '')
+                cell(item.procedure_date || '', 1200),
+                cell(item.procedure_name || '', 3200),
+                cell(item.mode || '', 1400),
+                cell(item.tutor || '', 2200),
+                cell(item.comments || '', 3200)
               ]
             })
           )
@@ -140,13 +142,22 @@ export default function ExportarPage() {
               size: 100,
               type: WidthType.PERCENTAGE
             },
+
             rows
           }),
+
           new Paragraph({ text: '' }),
+
+          new Paragraph({
+            text: 'Firma docente a cargo:'
+          }),
+
           new Paragraph({ text: '' }),
-          new Paragraph({ text: 'Firma docente a cargo:' }),
-          new Paragraph({ text: '' }),
-          new Paragraph({ text: '________________________________________' }),
+
+          new Paragraph({
+            text: '________________________________________'
+          }),
+
           new Paragraph({ text: '' }),
           new Paragraph({ text: '' })
         )
@@ -156,6 +167,21 @@ export default function ExportarPage() {
     const doc = new Document({
       sections: [
         {
+          properties: {
+            page: {
+              size: {
+                orientation: PageOrientation.LANDSCAPE
+              },
+
+              margin: {
+                top: 500,
+                right: 500,
+                bottom: 500,
+                left: 500
+              }
+            }
+          },
+
           children
         }
       ]
@@ -164,14 +190,16 @@ export default function ExportarPage() {
     const blob = await Packer.toBlob(doc)
 
     const url = URL.createObjectURL(blob)
+
     const link = document.createElement('a')
 
     link.href = url
     link.download = 'La-Riffobitacora.docx'
-    link.style.display = 'none'
 
     document.body.appendChild(link)
+
     link.click()
+
     document.body.removeChild(link)
 
     URL.revokeObjectURL(url)
@@ -190,7 +218,7 @@ export default function ExportarPage() {
             </h1>
 
             <p className="text-slate-700 mt-2">
-              Genera un documento editable con tablas por año y rotación.
+              Genera un documento editable optimizado para computador y celular.
             </p>
           </div>
 
@@ -200,9 +228,9 @@ export default function ExportarPage() {
             onTouchStart={handlePress}
             onPointerDown={handlePress}
             disabled={loading}
-            className="relative z-50 w-full bg-slate-900 text-white rounded-2xl p-5 text-xl font-semibold text-center touch-manipulation active:scale-95"
+            className="w-full bg-slate-900 text-white rounded-2xl p-5 text-xl font-semibold"
           >
-            {loading ? 'Generando documento...' : 'Exportar documento Word'}
+            {loading ? 'Generando...' : 'Exportar Word'}
           </button>
 
           {status && (
@@ -237,7 +265,8 @@ function headerCell(text: string) {
         children: [
           new TextRun({
             text,
-            bold: true
+            bold: true,
+            size: 18
           })
         ]
       })
@@ -245,11 +274,21 @@ function headerCell(text: string) {
   })
 }
 
-function cell(text: string) {
+function cell(text: string, width: number) {
   return new TableCell({
+    width: {
+      size: width,
+      type: WidthType.DXA
+    },
+
     children: [
       new Paragraph({
-        text
+        children: [
+          new TextRun({
+            text,
+            size: 16
+          })
+        ]
       })
     ]
   })
