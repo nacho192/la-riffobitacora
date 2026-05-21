@@ -1,6 +1,9 @@
 'use client'
 
 import { useRef, useState } from 'react'
+import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
+
 import {
   Document,
   Packer,
@@ -15,6 +18,7 @@ import {
   PageOrientation,
   TableLayoutType
 } from 'docx'
+
 import { supabase } from '@/lib/supabase'
 
 const TABLE_WIDTH = 14400
@@ -22,19 +26,10 @@ const TABLE_WIDTH = 14400
 export default function ExportarPage() {
   const [loading, setLoading] = useState(false)
   const [status, setStatus] = useState('')
+
   const lastPress = useRef(0)
 
-  async function handlePress() {
-    const now = Date.now()
-    if (now - lastPress.current < 1200) return
-    lastPress.current = now
-    await exportWord()
-  }
-
-  async function exportWord() {
-    setLoading(true)
-    setStatus('Generando documento...')
-
+  async function getData() {
     const {
       data: { user }
     } = await supabase.auth.getUser()
@@ -42,7 +37,7 @@ export default function ExportarPage() {
     if (!user) {
       alert('Debes iniciar sesión')
       window.location.href = '/login'
-      return
+      return null
     }
 
     const { data, error } = await supabase
@@ -54,18 +49,135 @@ export default function ExportarPage() {
 
     if (error) {
       alert(error.message)
+      return null
+    }
+
+    return {
+      data,
+      user
+    }
+  }
+
+  async function exportPDF() {
+    setLoading(true)
+
+    const result = await getData()
+
+    if (!result) {
       setLoading(false)
       return
     }
 
-    if (!data || data.length === 0) {
-      alert('No hay procedimientos')
-      setLoading(false)
-      return
-    }
+    const { data, user } = result
 
     const residentName =
-      data[0]?.resident_name ||
+      data?.[0]?.resident_name ||
+      user.user_metadata?.full_name ||
+      user.email ||
+      ''
+
+    const doc = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4'
+    })
+
+    doc.setFontSize(20)
+
+    doc.text('La Riffobitácora', 105, 18, {
+      align: 'center'
+    })
+
+    doc.setFontSize(11)
+
+    doc.text(
+      `Residente: ${residentName}`,
+      14,
+      28
+    )
+
+    const body = (data || []).map((item: any) => [
+      item.procedure_date || '',
+      item.procedure_name || '',
+      item.mode || '',
+      item.tutor || '',
+      item.comments || ''
+    ])
+
+    autoTable(doc, {
+      startY: 35,
+
+      head: [[
+        'Fecha',
+        'Procedimiento',
+        'Modalidad',
+        'Tutor',
+        'Comentarios'
+      ]],
+
+      body,
+
+      styles: {
+        fontSize: 8,
+        cellPadding: 2,
+        overflow: 'linebreak',
+        valign: 'middle'
+      },
+
+      headStyles: {
+        fillColor: [30, 41, 59]
+      },
+
+      columnStyles: {
+        0: { cellWidth: 20 },
+        1: { cellWidth: 45 },
+        2: { cellWidth: 22 },
+        3: { cellWidth: 35 },
+        4: { cellWidth: 60 }
+      },
+
+      margin: {
+        left: 10,
+        right: 10
+      }
+    })
+
+    const finalY =
+      (doc as any).lastAutoTable.finalY || 200
+
+    doc.text(
+      'Firma docente a cargo:',
+      14,
+      finalY + 20
+    )
+
+    doc.line(
+      14,
+      finalY + 32,
+      90,
+      finalY + 32
+    )
+
+    doc.save('La-Riffobitacora.pdf')
+
+    setStatus('PDF generado')
+    setLoading(false)
+  }
+
+  async function exportWord() {
+    setLoading(true)
+
+    const result = await getData()
+
+    if (!result) {
+      setLoading(false)
+      return
+    }
+
+    const { data, user } = result
+
+    const residentName =
+      data?.[0]?.resident_name ||
       user.user_metadata?.full_name ||
       user.email ||
       ''
@@ -78,79 +190,67 @@ export default function ExportarPage() {
         heading: HeadingLevel.TITLE,
         alignment: AlignmentType.CENTER
       }),
+
       new Paragraph({
         text: 'Bitácora de procedimientos - Residencia de Fisiatría UDD',
         alignment: AlignmentType.CENTER
       }),
+
       new Paragraph({
         text: `Residente: ${residentName}`
       }),
+
       new Paragraph({ text: '' })
     )
 
-    const groupedByYear = groupBy(data, 'year')
+    const rows = [
+      new TableRow({
+        children: [
+          headerCell('Fecha', 1500),
+          headerCell('Procedimiento', 3600),
+          headerCell('Modalidad', 1500),
+          headerCell('Tutor', 2600),
+          headerCell('Comentarios', 5200)
+        ]
+      }),
 
-    Object.keys(groupedByYear).forEach((year) => {
-      children.push(
-        new Paragraph({
-          text: `Año ${year}`,
-          heading: HeadingLevel.HEADING_1
+      ...(data || []).map((item: any) =>
+        new TableRow({
+          children: [
+            cell(item.procedure_date || '', 1500),
+            cell(item.procedure_name || '', 3600),
+            cell(item.mode || '', 1500),
+            cell(item.tutor || '', 2600),
+            cell(item.comments || '', 5200)
+          ]
         })
       )
+    ]
 
-      const groupedByRotation = groupBy(groupedByYear[year], 'rotation')
+    children.push(
+      new Table({
+        layout: TableLayoutType.FIXED,
 
-      Object.keys(groupedByRotation).forEach((rotation) => {
-        children.push(
-          new Paragraph({
-            text: rotation,
-            heading: HeadingLevel.HEADING_2
-          })
-        )
+        width: {
+          size: TABLE_WIDTH,
+          type: WidthType.DXA
+        },
 
-        const rows = [
-          new TableRow({
-            children: [
-              headerCell('Fecha', 1500),
-              headerCell('Procedimiento', 3600),
-              headerCell('Modalidad', 1500),
-              headerCell('Tutor', 2600),
-              headerCell('Comentarios', 5200)
-            ]
-          }),
+        rows
+      }),
 
-          ...groupedByRotation[rotation].map((item: any) =>
-            new TableRow({
-              children: [
-                cell(item.procedure_date || '', 1500),
-                cell(item.procedure_name || '', 3600),
-                cell(item.mode || '', 1500),
-                cell(item.tutor || '', 2600),
-                cell(item.comments || '', 5200)
-              ]
-            })
-          )
-        ]
+      new Paragraph({ text: '' }),
 
-        children.push(
-          new Table({
-            layout: TableLayoutType.FIXED,
-            width: {
-              size: TABLE_WIDTH,
-              type: WidthType.DXA
-            },
-            rows
-          }),
+      new Paragraph({
+        text: 'Firma docente a cargo:'
+      }),
 
-          new Paragraph({ text: '' }),
-          new Paragraph({ text: 'Firma docente a cargo:' }),
-          new Paragraph({ text: '' }),
-          new Paragraph({ text: '________________________________________' }),
-          new Paragraph({ text: '' }),
-          new Paragraph({ text: '' })
-        )
+      new Paragraph({ text: '' }),
+
+      new Paragraph({
+        text: '________________________________________'
       })
-    })
+    )
 
     const doc = new Document({
       sections: [
@@ -158,36 +258,54 @@ export default function ExportarPage() {
           properties: {
             page: {
               size: {
-                orientation: PageOrientation.LANDSCAPE
+                orientation: PageOrientation.PORTRAIT
               },
+
               margin: {
-                top: 500,
-                right: 500,
-                bottom: 500,
-                left: 500
+                top: 700,
+                right: 700,
+                bottom: 700,
+                left: 700
               }
             }
           },
+
           children
         }
       ]
     })
 
     const blob = await Packer.toBlob(doc)
+
     const url = URL.createObjectURL(blob)
+
     const link = document.createElement('a')
 
     link.href = url
     link.download = 'La-Riffobitacora.docx'
 
     document.body.appendChild(link)
+
     link.click()
+
     document.body.removeChild(link)
 
     URL.revokeObjectURL(url)
 
-    setStatus('Documento generado')
+    setStatus('Word generado')
     setLoading(false)
+  }
+
+  function safePress(
+    fn: () => void | Promise<void>
+  ) {
+    const now = Date.now()
+
+    if (now - lastPress.current < 1200) return
+
+    lastPress.current = now
+
+    fn()
   }
 
   return (
@@ -196,23 +314,30 @@ export default function ExportarPage() {
         <div className="bg-white rounded-3xl p-8 space-y-6">
           <div>
             <h1 className="text-4xl font-bold text-slate-900">
-              Exportar Word
+              Exportar
             </h1>
 
             <p className="text-slate-700 mt-2">
-              Genera un documento editable con tabla fija ajustada a hoja carta horizontal.
+              Exporta tu bitácora en Word o PDF.
             </p>
           </div>
 
           <button
             type="button"
-            onClick={handlePress}
-            onTouchStart={handlePress}
-            onPointerDown={handlePress}
-            disabled={loading}
+            onClick={() => safePress(exportWord)}
+            onTouchStart={() => safePress(exportWord)}
             className="w-full bg-slate-900 text-white rounded-2xl p-5 text-xl font-semibold"
           >
-            {loading ? 'Generando...' : 'Exportar Word'}
+            Exportar Word
+          </button>
+
+          <button
+            type="button"
+            onClick={() => safePress(exportPDF)}
+            onTouchStart={() => safePress(exportPDF)}
+            className="w-full bg-red-700 text-white rounded-2xl p-5 text-xl font-semibold"
+          >
+            Exportar PDF
           </button>
 
           {status && (
@@ -226,21 +351,13 @@ export default function ExportarPage() {
   )
 }
 
-function groupBy(array: any[], key: string) {
-  return array.reduce((acc: any, item: any) => {
-    const value = item[key] || 'Sin información'
-    if (!acc[value]) acc[value] = []
-    acc[value].push(item)
-    return acc
-  }, {})
-}
-
 function headerCell(text: string, width: number) {
   return new TableCell({
     width: {
       size: width,
       type: WidthType.DXA
     },
+
     children: [
       new Paragraph({
         children: [
@@ -261,6 +378,7 @@ function cell(text: string, width: number) {
       size: width,
       type: WidthType.DXA
     },
+
     children: [
       new Paragraph({
         children: [
