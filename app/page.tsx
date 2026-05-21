@@ -36,20 +36,16 @@ export default function HomePage() {
   return (
     <main className="min-h-screen pb-28 bg-slate-100 p-6">
       <div className="max-w-4xl mx-auto space-y-8">
-        <div className="space-y-3">
+        <div className="space-y-4">
           <h1 className="text-4xl md:text-5xl font-bold text-slate-900 leading-tight">
             Bitácora digital para Residentes de Fisiatría de la Universidad del Desarrollo
           </h1>
 
-          <p
-            className="text-4xl text-slate-700"
-            style={{
-              fontFamily:
-                '"Brush Script MT", "Segoe Script", cursive'
-            }}
-          >
-            La RiffoBitácora
-          </p>
+          <img
+            src="/riffobitacora-title.png"
+            alt="La RiffoBitácora"
+            className="w-full max-w-md"
+          />
         </div>
 
         <div className="bg-white rounded-3xl p-8 space-y-6 shadow-sm">
