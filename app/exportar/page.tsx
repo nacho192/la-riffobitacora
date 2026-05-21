@@ -287,15 +287,14 @@ export default function ExportarPage() {
               alignment: AlignmentType.RIGHT,
 
               children: [
-                new ImageRun({
-                  data: logoBuffer,
-                  transformation: {
-                    width: 120,
-                    height: 120
-                  }
-                })
-              ]
-            }),
+              new ImageRun({
+  type: 'jpg',
+  data: logoBuffer,
+  transformation: {
+    width: 120,
+    height: 120
+  }
+})
 
             new Paragraph({
               text: `Residente: ${residentName}`
