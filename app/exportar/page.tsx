@@ -53,18 +53,24 @@ export default function ExportarPage() {
     }
 
     return {
-      data,
+      data: data || [],
       user
     }
   }
 
   async function loadLogo() {
     const response = await fetch('/logo.jpg')
+
+    if (!response.ok) {
+      throw new Error('No se pudo cargar logo.jpg')
+    }
+
     return await response.arrayBuffer()
   }
 
   async function exportPDF() {
     setLoading(true)
+    setStatus('Generando PDF...')
 
     const result = await getData()
 
@@ -96,14 +102,7 @@ export default function ExportarPage() {
       reader.onloadend = () => {
         const base64data = reader.result as string
 
-        doc.addImage(
-          base64data,
-          'JPEG',
-          160,
-          10,
-          35,
-          35
-        )
+        doc.addImage(base64data, 'JPEG', 160, 10, 35, 35)
 
         buildPdfContent(doc, data, residentName)
       }
@@ -120,28 +119,13 @@ export default function ExportarPage() {
     residentName: string
   ) {
     doc.setFontSize(20)
-
-    doc.text(
-      'Bitácora de Procedimientos',
-      14,
-      20
-    )
+    doc.text('Bitácora de Procedimientos', 14, 20)
 
     doc.setFontSize(12)
-
-    doc.text(
-      'Medicina Física y Rehabilitación',
-      14,
-      28
-    )
+    doc.text('Medicina Física y Rehabilitación', 14, 28)
 
     doc.setFontSize(10)
-
-    doc.text(
-      `Residente: ${residentName}`,
-      14,
-      40
-    )
+    doc.text(`Residente: ${residentName}`, 14, 40)
 
     autoTable(doc, {
       startY: 48,
@@ -154,7 +138,7 @@ export default function ExportarPage() {
         'Comentarios'
       ]],
 
-      body: (data || []).map((item: any) => [
+      body: data.map((item: any) => [
         item.procedure_date || '',
         item.procedure_name || '',
         item.mode || '',
@@ -186,21 +170,10 @@ export default function ExportarPage() {
       }
     })
 
-    const finalY =
-      (doc as any).lastAutoTable.finalY || 200
+    const finalY = (doc as any).lastAutoTable?.finalY || 200
 
-    doc.text(
-      'Firma docente a cargo:',
-      14,
-      finalY + 20
-    )
-
-    doc.line(
-      14,
-      finalY + 32,
-      90,
-      finalY + 32
-    )
+    doc.text('Firma docente a cargo:', 14, finalY + 20)
+    doc.line(14, finalY + 32, 90, finalY + 32)
 
     doc.save('Bitacora-de-Procedimientos.pdf')
 
@@ -210,6 +183,7 @@ export default function ExportarPage() {
 
   async function exportWord() {
     setLoading(true)
+    setStatus('Generando Word...')
 
     const result = await getData()
 
@@ -226,7 +200,13 @@ export default function ExportarPage() {
       user.email ||
       ''
 
-    const logoBuffer = await loadLogo()
+    let logoBuffer: ArrayBuffer | null = null
+
+    try {
+      logoBuffer = await loadLogo()
+    } catch {
+      logoBuffer = null
+    }
 
     const rows = [
       new TableRow({
@@ -239,7 +219,7 @@ export default function ExportarPage() {
         ]
       }),
 
-      ...(data || []).map((item: any) =>
+      ...data.map((item: any) =>
         new TableRow({
           children: [
             cell(item.procedure_date || '', 1500),
@@ -250,6 +230,80 @@ export default function ExportarPage() {
           ]
         })
       )
+    ]
+
+    const children = [
+      new Paragraph({
+        children: [
+          new TextRun({
+            text: 'Bitácora de Procedimientos',
+            bold: true,
+            size: 34
+          })
+        ]
+      }),
+
+      new Paragraph({
+        children: [
+          new TextRun({
+            text: 'Medicina Física y Rehabilitación',
+            size: 24
+          })
+        ]
+      }),
+
+      ...(logoBuffer
+        ? [
+            new Paragraph({
+              alignment: AlignmentType.RIGHT,
+              children: [
+                new ImageRun({
+                  type: 'jpg',
+                  data: logoBuffer,
+                  transformation: {
+                    width: 120,
+                    height: 120
+                  }
+                })
+              ]
+            })
+          ]
+        : []),
+
+      new Paragraph({
+        text: `Residente: ${residentName}`
+      }),
+
+      new Paragraph({
+        text: ''
+      }),
+
+      new Table({
+        layout: TableLayoutType.FIXED,
+
+        width: {
+          size: TABLE_WIDTH,
+          type: WidthType.DXA
+        },
+
+        rows
+      }),
+
+      new Paragraph({
+        text: ''
+      }),
+
+      new Paragraph({
+        text: 'Firma docente a cargo:'
+      }),
+
+      new Paragraph({
+        text: ''
+      }),
+
+      new Paragraph({
+        text: '________________________________________'
+      })
     ]
 
     const doc = new Document({
@@ -263,74 +317,12 @@ export default function ExportarPage() {
             }
           },
 
-          children: [
-            new Paragraph({
-              children: [
-                new TextRun({
-                  text: 'Bitácora de Procedimientos',
-                  bold: true,
-                  size: 34
-                })
-              ]
-            }),
-
-            new Paragraph({
-              children: [
-                new TextRun({
-                  text: 'Medicina Física y Rehabilitación',
-                  size: 24
-                })
-              ]
-            }),
-
-            new Paragraph({
-              alignment: AlignmentType.RIGHT,
-
-              children: [
-              new ImageRun({
-  type: 'jpg',
-  data: logoBuffer,
-  transformation: {
-    width: 120,
-    height: 120
-  }
-}),
-
-            new Paragraph({
-              text: `Residente: ${residentName}`
-            }),
-
-            new Paragraph({ text: '' }),
-
-            new Table({
-              layout: TableLayoutType.FIXED,
-
-              width: {
-                size: TABLE_WIDTH,
-                type: WidthType.DXA
-              },
-
-              rows
-            }),
-
-            new Paragraph({ text: '' }),
-
-            new Paragraph({
-              text: 'Firma docente a cargo:'
-            }),
-
-            new Paragraph({ text: '' }),
-
-            new Paragraph({
-              text: '________________________________________'
-            })
-          ]
+          children
         }
       ]
     })
 
     const blob = await Packer.toBlob(doc)
-
     const url = URL.createObjectURL(blob)
 
     const link = document.createElement('a')
@@ -339,9 +331,7 @@ export default function ExportarPage() {
     link.download = 'Bitacora-de-Procedimientos.docx'
 
     document.body.appendChild(link)
-
     link.click()
-
     document.body.removeChild(link)
 
     URL.revokeObjectURL(url)
@@ -350,9 +340,7 @@ export default function ExportarPage() {
     setLoading(false)
   }
 
-  function safePress(
-    fn: () => void | Promise<void>
-  ) {
+  function safePress(fn: () => void | Promise<void>) {
     const now = Date.now()
 
     if (now - lastPress.current < 1200) return
@@ -381,7 +369,7 @@ export default function ExportarPage() {
             onClick={() => safePress(exportWord)}
             className="w-full bg-slate-900 text-white rounded-2xl p-5 text-xl font-semibold"
           >
-            Exportar Word
+            {loading ? 'Generando...' : 'Exportar Word'}
           </button>
 
           <button
@@ -389,7 +377,7 @@ export default function ExportarPage() {
             onClick={() => safePress(exportPDF)}
             className="w-full bg-red-700 text-white rounded-2xl p-5 text-xl font-semibold"
           >
-            Exportar PDF
+            {loading ? 'Generando...' : 'Exportar PDF'}
           </button>
 
           {status && (
