@@ -12,23 +12,22 @@ import {
   TextRun,
   HeadingLevel,
   AlignmentType,
-  PageOrientation
+  PageOrientation,
+  TableLayoutType
 } from 'docx'
 import { supabase } from '@/lib/supabase'
+
+const TABLE_WIDTH = 14400
 
 export default function ExportarPage() {
   const [loading, setLoading] = useState(false)
   const [status, setStatus] = useState('')
-
   const lastPress = useRef(0)
 
   async function handlePress() {
     const now = Date.now()
-
     if (now - lastPress.current < 1200) return
-
     lastPress.current = now
-
     await exportWord()
   }
 
@@ -79,16 +78,13 @@ export default function ExportarPage() {
         heading: HeadingLevel.TITLE,
         alignment: AlignmentType.CENTER
       }),
-
       new Paragraph({
         text: 'Bitácora de procedimientos - Residencia de Fisiatría UDD',
         alignment: AlignmentType.CENTER
       }),
-
       new Paragraph({
         text: `Residente: ${residentName}`
       }),
-
       new Paragraph({ text: '' })
     )
 
@@ -115,22 +111,22 @@ export default function ExportarPage() {
         const rows = [
           new TableRow({
             children: [
-              headerCell('Fecha'),
-              headerCell('Procedimiento'),
-              headerCell('Modalidad'),
-              headerCell('Tutor'),
-              headerCell('Comentarios')
+              headerCell('Fecha', 1500),
+              headerCell('Procedimiento', 3600),
+              headerCell('Modalidad', 1500),
+              headerCell('Tutor', 2600),
+              headerCell('Comentarios', 5200)
             ]
           }),
 
           ...groupedByRotation[rotation].map((item: any) =>
             new TableRow({
               children: [
-                cell(item.procedure_date || '', 1200),
-                cell(item.procedure_name || '', 3200),
-                cell(item.mode || '', 1400),
-                cell(item.tutor || '', 2200),
-                cell(item.comments || '', 3200)
+                cell(item.procedure_date || '', 1500),
+                cell(item.procedure_name || '', 3600),
+                cell(item.mode || '', 1500),
+                cell(item.tutor || '', 2600),
+                cell(item.comments || '', 5200)
               ]
             })
           )
@@ -138,26 +134,18 @@ export default function ExportarPage() {
 
         children.push(
           new Table({
+            layout: TableLayoutType.FIXED,
             width: {
-              size: 100,
-              type: WidthType.PERCENTAGE
+              size: TABLE_WIDTH,
+              type: WidthType.DXA
             },
-
             rows
           }),
 
           new Paragraph({ text: '' }),
-
-          new Paragraph({
-            text: 'Firma docente a cargo:'
-          }),
-
+          new Paragraph({ text: 'Firma docente a cargo:' }),
           new Paragraph({ text: '' }),
-
-          new Paragraph({
-            text: '________________________________________'
-          }),
-
+          new Paragraph({ text: '________________________________________' }),
           new Paragraph({ text: '' }),
           new Paragraph({ text: '' })
         )
@@ -172,7 +160,6 @@ export default function ExportarPage() {
               size: {
                 orientation: PageOrientation.LANDSCAPE
               },
-
               margin: {
                 top: 500,
                 right: 500,
@@ -181,25 +168,20 @@ export default function ExportarPage() {
               }
             }
           },
-
           children
         }
       ]
     })
 
     const blob = await Packer.toBlob(doc)
-
     const url = URL.createObjectURL(blob)
-
     const link = document.createElement('a')
 
     link.href = url
     link.download = 'La-Riffobitacora.docx'
 
     document.body.appendChild(link)
-
     link.click()
-
     document.body.removeChild(link)
 
     URL.revokeObjectURL(url)
@@ -218,7 +200,7 @@ export default function ExportarPage() {
             </h1>
 
             <p className="text-slate-700 mt-2">
-              Genera un documento editable optimizado para computador y celular.
+              Genera un documento editable con tabla fija ajustada a hoja carta horizontal.
             </p>
           </div>
 
@@ -247,19 +229,18 @@ export default function ExportarPage() {
 function groupBy(array: any[], key: string) {
   return array.reduce((acc: any, item: any) => {
     const value = item[key] || 'Sin información'
-
-    if (!acc[value]) {
-      acc[value] = []
-    }
-
+    if (!acc[value]) acc[value] = []
     acc[value].push(item)
-
     return acc
   }, {})
 }
 
-function headerCell(text: string) {
+function headerCell(text: string, width: number) {
   return new TableCell({
+    width: {
+      size: width,
+      type: WidthType.DXA
+    },
     children: [
       new Paragraph({
         children: [
@@ -280,7 +261,6 @@ function cell(text: string, width: number) {
       size: width,
       type: WidthType.DXA
     },
-
     children: [
       new Paragraph({
         children: [
