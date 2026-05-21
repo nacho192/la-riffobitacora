@@ -1,67 +1,37 @@
-type Props = {
-
-  name: string
-
-  current: number
-
-  required: number
-}
-
 export default function ProgressCard({
-
   name,
   current,
   required
-
-}:Props) {
-
-  const percentage = Math.min(
-    (current / required) * 100,
-    100
-  )
+}: {
+  name: string
+  current: number
+  required: number
+}) {
+  const percentage =
+    required > 0
+      ? Math.min((current / required) * 100, 100)
+      : 0
 
   return (
-
-    <div className="bg-white rounded-3xl p-5 space-y-3">
-
-      <div className="flex justify-between items-center">
-
-        <h3 className="font-semibold text-lg">
+    <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm">
+      <div className="flex justify-between gap-4 mb-2">
+        <p className="font-semibold text-slate-950">
           {name}
-        </h3>
+        </p>
 
-        <span className="text-sm text-slate-500">
+        <p className="text-sm font-semibold text-slate-800 whitespace-nowrap">
           {current}/{required}
-        </span>
-
+        </p>
       </div>
 
-      <div className="w-full bg-slate-200 rounded-full h-4 overflow-hidden">
-
+      <div className="w-full bg-slate-200 rounded-full h-3 overflow-hidden">
         <div
-          className={`
-            h-full rounded-full transition-all
-
-            ${percentage >= 100
-              ? 'bg-green-500'
-              : percentage >= 50
-              ? 'bg-yellow-500'
-              : 'bg-red-500'
-            }
-          `}
+          className="bg-slate-900 h-3 rounded-full"
           style={{
             width: `${percentage}%`
           }}
         />
-
       </div>
-
-      <p className="text-sm text-slate-500">
-
-        {Math.round(percentage)}% completado
-
-      </p>
-
     </div>
   )
 }

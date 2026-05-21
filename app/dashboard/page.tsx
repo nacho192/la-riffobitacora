@@ -96,11 +96,11 @@ export default function DashboardPage() {
   const asistidos = logs.filter((p) => p.mode === 'Asiste').length
 
   return (
-    <main className="min-h-screen pb-28 bg-slate-100 p-6">
+    <main className="min-h-screen pb-28 bg-slate-100 p-6 font-[Aptos,Inter,-apple-system,BlinkMacSystemFont,Segoe_UI,sans-serif]">
       <div className="max-w-5xl mx-auto space-y-6">
-        <div>
-          <h1 className="text-5xl font-bold text-slate-900">
-            Dashboard
+        <div className="text-center">
+          <h1 className="text-5xl font-bold text-slate-950">
+            Estadísticas
           </h1>
 
           {residentName && (
@@ -118,8 +118,8 @@ export default function DashboardPage() {
         </div>
 
         {editing && (
-          <div className="bg-white rounded-3xl p-6 space-y-4 border border-slate-200">
-            <h2 className="text-2xl font-bold text-slate-900">
+          <div className="bg-white rounded-3xl p-6 space-y-4 border border-slate-200 shadow-sm">
+            <h2 className="text-2xl font-bold text-slate-950 text-center">
               Editar procedimiento
             </h2>
 
@@ -128,7 +128,7 @@ export default function DashboardPage() {
               onChange={(e) =>
                 setEditing({ ...editing, year: Number(e.target.value) })
               }
-              className="w-full rounded-2xl border border-slate-500 p-4 text-lg"
+              className="w-full rounded-2xl border border-slate-500 p-4 text-lg text-slate-950"
             >
               <option value={1}>Primer año</option>
               <option value={2}>Segundo año</option>
@@ -140,7 +140,7 @@ export default function DashboardPage() {
               onChange={(e) =>
                 setEditing({ ...editing, rotation: e.target.value })
               }
-              className="w-full rounded-2xl border border-slate-500 p-4 text-lg"
+              className="w-full rounded-2xl border border-slate-500 p-4 text-lg text-slate-950"
             >
               <option value="">Seleccionar rotación</option>
 
@@ -157,7 +157,7 @@ export default function DashboardPage() {
                 setEditing({ ...editing, procedure_name: e.target.value })
               }
               placeholder="Procedimiento"
-              className="w-full rounded-2xl border border-slate-500 p-4 text-lg"
+              className="w-full rounded-2xl border border-slate-500 p-4 text-lg text-slate-950"
             />
 
             <input
@@ -166,7 +166,7 @@ export default function DashboardPage() {
                 setEditing({ ...editing, category: e.target.value })
               }
               placeholder="Categoría"
-              className="w-full rounded-2xl border border-slate-500 p-4 text-lg"
+              className="w-full rounded-2xl border border-slate-500 p-4 text-lg text-slate-950"
             />
 
             <select
@@ -174,7 +174,7 @@ export default function DashboardPage() {
               onChange={(e) =>
                 setEditing({ ...editing, mode: e.target.value })
               }
-              className="w-full rounded-2xl border border-slate-500 p-4 text-lg"
+              className="w-full rounded-2xl border border-slate-500 p-4 text-lg text-slate-950"
             >
               <option>Realiza</option>
               <option>Observa</option>
@@ -187,7 +187,7 @@ export default function DashboardPage() {
               onChange={(e) =>
                 setEditing({ ...editing, procedure_date: e.target.value })
               }
-              className="w-full rounded-2xl border border-slate-500 p-4 text-lg"
+              className="w-full rounded-2xl border border-slate-500 p-4 text-lg text-slate-950"
             />
 
             <input
@@ -196,7 +196,7 @@ export default function DashboardPage() {
                 setEditing({ ...editing, tutor: e.target.value })
               }
               placeholder="Tutor"
-              className="w-full rounded-2xl border border-slate-500 p-4 text-lg"
+              className="w-full rounded-2xl border border-slate-500 p-4 text-lg text-slate-950"
             />
 
             <textarea
@@ -206,7 +206,7 @@ export default function DashboardPage() {
               }
               rows={3}
               placeholder="Comentarios"
-              className="w-full rounded-2xl border border-slate-500 p-4 text-lg"
+              className="w-full rounded-2xl border border-slate-500 p-4 text-lg text-slate-950"
             />
 
             <textarea
@@ -216,7 +216,7 @@ export default function DashboardPage() {
               }
               rows={4}
               placeholder="Notas privadas"
-              className="w-full rounded-2xl border border-slate-500 p-4 text-lg"
+              className="w-full rounded-2xl border border-slate-500 p-4 text-lg text-slate-950"
             />
 
             <div className="grid grid-cols-2 gap-3">
@@ -237,8 +237,8 @@ export default function DashboardPage() {
           </div>
         )}
 
-        <div className="bg-white rounded-3xl p-6">
-          <h2 className="text-2xl font-bold mb-4 text-slate-900">
+        <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200">
+          <h2 className="text-2xl font-bold mb-4 text-slate-950 text-center">
             Procedimientos recientes
           </h2>
 
@@ -250,24 +250,24 @@ export default function DashboardPage() {
               >
                 <div className="flex justify-between gap-4">
                   <div>
-                    <h3 className="font-semibold text-lg text-slate-900">
+                    <h3 className="font-semibold text-lg text-slate-950">
                       {procedure.procedure_name}
                     </h3>
 
-                    <p className="text-slate-700">
+                    <p className="text-slate-800">
                       {procedure.rotation}
                     </p>
 
-                    <p className="text-slate-700 text-sm">
+                    <p className="text-slate-800 text-sm">
                       Tutor: {procedure.tutor}
                     </p>
 
-                    <p className="text-slate-700 text-sm">
+                    <p className="text-slate-800 text-sm">
                       Fecha: {procedure.procedure_date}
                     </p>
                   </div>
 
-                  <span className="bg-slate-100 rounded-xl px-3 py-1 text-sm h-fit">
+                  <span className="bg-slate-100 text-slate-900 rounded-xl px-3 py-1 text-sm h-fit">
                     {procedure.mode}
                   </span>
                 </div>
@@ -291,7 +291,7 @@ export default function DashboardPage() {
             ))}
 
             {logs.length === 0 && (
-              <p className="text-slate-700">
+              <p className="text-slate-800 text-center">
                 Aún no hay procedimientos registrados.
               </p>
             )}
@@ -299,13 +299,13 @@ export default function DashboardPage() {
         </div>
 
         <div className="space-y-6">
-          <h2 className="text-3xl font-bold text-slate-900">
+          <h2 className="text-3xl font-bold text-slate-950 text-center">
             Progreso por procedimiento
           </h2>
 
           {procedures.map((category) => (
             <div key={category.category} className="space-y-4">
-              <h3 className="text-xl font-semibold text-slate-700">
+              <h3 className="text-xl font-semibold text-slate-900 text-center">
                 {category.category}
               </h3>
 
@@ -337,9 +337,9 @@ export default function DashboardPage() {
 
 function Stat({ title, value }: { title: string; value: number }) {
   return (
-    <div className="bg-white rounded-3xl p-6">
-      <p className="text-slate-700">{title}</p>
-      <h2 className="text-4xl font-bold text-slate-900">{value}</h2>
+    <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 text-center">
+      <p className="text-slate-800">{title}</p>
+      <h2 className="text-4xl font-bold text-slate-950">{value}</h2>
     </div>
   )
 }

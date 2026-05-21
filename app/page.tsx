@@ -34,26 +34,32 @@ export default function HomePage() {
   }
 
   return (
-    <main className="min-h-screen pb-28 bg-slate-100 p-6">
+    <main className="min-h-screen pb-28 bg-slate-100 p-6 font-[Aptos,Inter,-apple-system,BlinkMacSystemFont,Segoe_UI,sans-serif]">
       <div className="max-w-4xl mx-auto space-y-8">
-        <div className="space-y-4">
-          <h1 className="text-4xl md:text-5xl font-bold text-slate-900 leading-tight">
-            Bitácora digital para Residentes de Fisiatría de la Universidad del Desarrollo
+        <section className="text-center space-y-4 pt-6">
+          <h1 className="text-4xl md:text-5xl font-bold text-slate-950 leading-tight tracking-tight">
+            Bitácora digital para Residentes de Fisiatría
           </h1>
 
-          <img
-            src="/riffobitacora-title.png"
-            alt="La RiffoBitácora"
-            className="w-full max-w-md"
-          />
-        </div>
+          <p className="text-xl md:text-2xl text-slate-700 font-medium">
+            Universidad del Desarrollo
+          </p>
 
-        <div className="bg-white rounded-3xl p-8 space-y-6 shadow-sm">
-          <h2 className="text-3xl font-semibold text-slate-900">
+          <div className="flex justify-center pt-2">
+            <img
+              src="/riffobitacora-title.png"
+              alt="La RiffoBitácora"
+              className="w-full max-w-sm md:max-w-md"
+            />
+          </div>
+        </section>
+
+        <section className="bg-white rounded-3xl p-8 space-y-6 shadow-sm border border-slate-200">
+          <h2 className="text-3xl font-semibold text-slate-950 text-center">
             Plataforma de registro clínico y seguimiento académico
           </h2>
 
-          <div className="space-y-5 text-slate-700 text-lg leading-relaxed">
+          <div className="space-y-5 text-slate-800 text-lg leading-relaxed">
             <p>
               Esta plataforma permite registrar procedimientos realizados durante las distintas rotaciones clínicas de Medicina Física y Rehabilitación, facilitando el seguimiento longitudinal del progreso formativo de cada residente.
             </p>
@@ -70,7 +76,7 @@ export default function HomePage() {
               Su diseño está orientado específicamente a programas de formación en fisiatría, priorizando una experiencia simple, rápida y compatible con computador y dispositivos móviles.
             </p>
           </div>
-        </div>
+        </section>
       </div>
     </main>
   )
