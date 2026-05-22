@@ -17,8 +17,8 @@ export default function BottomNav() {
       icon: '/icon-home.png'
     },
     {
-      href: '/nuevo',
-      label: 'Nuevo',
+      href: '/mis-procedimientos',
+      label: 'Mis procedimientos',
       icon: '/icon-new.png'
     },
     {
@@ -37,7 +37,9 @@ export default function BottomNav() {
     <nav className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur border-t border-slate-200 px-2 py-2 z-50">
       <div className="max-w-2xl mx-auto flex justify-around items-center">
         {items.map((item) => {
-          const active = pathname === item.href
+          const active =
+            pathname === item.href ||
+            (item.href === '/mis-procedimientos' && pathname === '/nuevo')
 
           return (
             <Link
@@ -58,8 +60,8 @@ export default function BottomNav() {
               <span
                 className={
                   active
-                    ? 'text-xs font-semibold text-slate-950'
-                    : 'text-xs text-slate-600'
+                    ? 'text-[11px] font-semibold text-slate-950 text-center'
+                    : 'text-[11px] text-slate-600 text-center'
                 }
               >
                 {item.label}

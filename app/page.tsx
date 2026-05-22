@@ -60,7 +60,7 @@ export default function HomePage() {
           </h2>
 
           <p className="text-slate-800 text-lg leading-relaxed text-center">
-            Registra procedimientos clínicos, revisa tu progreso formativo y exporta tu bitácora en formatos listos para revisión docente.
+            Registra procedimientos clínicos, revisa tu progreso formativo y guarda notas técnicas personales de fácil acceso.
           </p>
 
           <div className="grid md:grid-cols-3 gap-4">
@@ -76,11 +76,11 @@ export default function HomePage() {
 
             <div className="bg-slate-50 rounded-3xl p-5 border border-slate-200">
               <h3 className="text-lg font-bold text-slate-950">
-                Seguir progreso
+                Notas técnicas
               </h3>
 
               <p className="text-slate-700 mt-2">
-                Visualiza estadísticas y avance según los mínimos definidos para cada procedimiento.
+                Guarda técnica, dosis, materiales, tips y detalles privados asociados a cada procedimiento.
               </p>
             </div>
 
@@ -98,11 +98,11 @@ export default function HomePage() {
           <button
             type="button"
             onClick={() => {
-              window.location.href = '/nuevo'
+              window.location.href = '/mis-procedimientos'
             }}
             className="w-full bg-slate-900 text-white rounded-2xl p-5 text-xl font-semibold active:scale-95"
           >
-            Registrar procedimiento
+            Ir a Mis procedimientos
           </button>
         </section>
       </div>
