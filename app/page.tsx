@@ -90,7 +90,7 @@ export default function HomePage() {
               </h3>
 
               <p className="text-slate-700 mt-2">
-                Descarga informes en Word o PDF, con respaldo mensual automático global.
+                Descarga informes en Word o PDF.
               </p>
             </div>
           </div>
