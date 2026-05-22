@@ -180,7 +180,7 @@ export default function ExportarPage() {
             }),
 
             new Paragraph({
-              text: `Fecha de exportación: ${new Date().toLocaleDateString('es-CL')}`
+              text: `Fecha de exportación: ${formatToday()}`
             }),
 
             new Paragraph({
@@ -222,13 +222,13 @@ export default function ExportarPage() {
                 ...filteredData.map((item) =>
                   new TableRow({
                     children: [
-                      item.procedure_date || '',
+                      formatDate(item.procedure_date),
                       item.procedure_name || '',
                       item.category || '',
                       item.mode || '',
                       item.tutor || '',
                       item.rotation || '',
-                      item.comments || ''
+                      cleanComment(item.comments)
                     ].map((value) =>
                       new TableCell({
                         children: [
@@ -353,7 +353,7 @@ export default function ExportarPage() {
     )
 
     doc.text(
-      `Fecha de exportación: ${new Date().toLocaleDateString('es-CL')}`,
+      `Fecha de exportación: ${formatToday()}`,
       14,
       52
     )
@@ -372,13 +372,13 @@ export default function ExportarPage() {
       ]],
 
       body: filteredData.map((item) => [
-        item.procedure_date || '',
+        formatDate(item.procedure_date),
         item.procedure_name || '',
         item.category || '',
         item.mode || '',
         item.tutor || '',
         item.rotation || '',
-        item.comments || ''
+        cleanComment(item.comments)
       ]),
 
       styles: {
@@ -393,11 +393,11 @@ export default function ExportarPage() {
       },
 
       columnStyles: {
-        0: { cellWidth: 16 },
-        1: { cellWidth: 32 },
-        2: { cellWidth: 24 },
+        0: { cellWidth: 22 },
+        1: { cellWidth: 30 },
+        2: { cellWidth: 22 },
         3: { cellWidth: 16 },
-        4: { cellWidth: 24 },
+        4: { cellWidth: 22 },
         5: { cellWidth: 24 },
         6: { cellWidth: 40 }
       },
@@ -520,4 +520,32 @@ export default function ExportarPage() {
       </div>
     </main>
   )
+}
+
+function cleanComment(value: string) {
+  return String(value || '')
+    .replace(/\n?Registro repetido \d+\/\d+/gi, '')
+    .trim()
+}
+
+function formatDate(value: string) {
+  if (!value) return ''
+
+  const parts = String(value).split('-')
+
+  if (parts.length !== 3) return value
+
+  const [year, month, day] = parts
+
+  return `${day}-${month}-${year}`
+}
+
+function formatToday() {
+  const today = new Date()
+
+  const day = String(today.getDate()).padStart(2, '0')
+  const month = String(today.getMonth() + 1).padStart(2, '0')
+  const year = today.getFullYear()
+
+  return `${day}-${month}-${year}`
 }
