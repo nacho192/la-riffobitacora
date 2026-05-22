@@ -360,7 +360,8 @@ export default function ExportarPage() {
             </h1>
 
             <p className="text-slate-700 mt-2">
-              Exporta tu bitácora en Word o PDF.
+              Para mejor compatibilidad se recomienda abrir el documento en computador
+  o exportarlo como PDF. 
             </p>
           </div>
 
