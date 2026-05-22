@@ -1,279 +1,529 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { rotations } from '@/lib/rotations'
-import { procedures } from '@/lib/procedures'
 
-export default function ProcedureForm() {
-  const [loading, setLoading] = useState(false)
-  const [selectedCategory, setSelectedCategory] = useState('')
-  const [selectedProcedure, setSelectedProcedure] = useState('')
-  const [customProcedure, setCustomProcedure] = useState('')
+import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
 
-  const [form, setForm] = useState({
-    year: 1,
-    rotation: '',
-    tutor: '',
-    mode: 'Realiza',
-    procedure_date: '',
-    repeat_count: 1,
-    comments: ''
-  })
+import {
+  Document,
+  Packer,
+  Paragraph,
+  Table,
+  TableCell,
+  TableRow,
+  TextRun,
+  WidthType,
+  AlignmentType,
+  HeadingLevel,
+  ImageRun
+} from 'docx'
 
-  function updateField(field: string, value: string | number) {
-    setForm((prev) => ({
-      ...prev,
-      [field]: value
-    }))
-  }
+export default function ExportarPage() {
+  const [data, setData] = useState<any[]>([])
+  const [residentName, setResidentName] = useState('')
+  const [loading, setLoading] = useState(true)
 
-  function handleProcedureChange(value: string) {
-    setSelectedProcedure(value)
+  const [selectedYear, setSelectedYear] = useState('Todos')
+  const [selectedRotation, setSelectedRotation] = useState('Todas')
 
-    const foundCategory = procedures.find((category) =>
-      category.items.some((item) => item.name === value)
-    )
+  useEffect(() => {
+    loadData()
+  }, [])
 
-    if (foundCategory) {
-      setSelectedCategory(foundCategory.category)
-    }
-
-    if (value === 'Otro procedimiento') {
-      setSelectedCategory('Otros procedimientos')
-    }
-  }
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-
-    const procedureToSave =
-      selectedProcedure === 'Otro procedimiento'
-        ? customProcedure
-        : selectedProcedure
-
-    if (
-      !form.rotation ||
-      !selectedCategory ||
-      !procedureToSave ||
-      !form.procedure_date ||
-      !form.tutor
-    ) {
-      alert('Faltan campos obligatorios')
-      return
-    }
-
-    const repeatCount = Math.max(1, Number(form.repeat_count || 1))
-
-    setLoading(true)
-
+  async function loadData() {
     const {
       data: { user }
     } = await supabase.auth.getUser()
 
     if (!user) {
-      alert('Debes iniciar sesión')
-      setLoading(false)
       window.location.href = '/login'
       return
     }
 
-    const rows = Array.from({ length: repeatCount }, () => ({
-      year: form.year,
-      rotation: form.rotation,
-      tutor: form.tutor,
-      mode: form.mode,
-      procedure_date: form.procedure_date,
-      comments: form.comments,
-      category: selectedCategory,
-      procedure_name: procedureToSave,
-      user_id: user.id,
-      resident_name:
-        user.user_metadata?.full_name ||
+    setResidentName(
+      user.user_metadata?.full_name ||
         user.user_metadata?.name ||
-        user.email
-    }))
+        user.email ||
+        ''
+    )
 
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('procedures_log')
-      .insert(rows)
-
-    setLoading(false)
+      .select('*')
+      .eq('user_id', user.id)
+      .order('procedure_date', { ascending: false })
 
     if (error) {
       alert(error.message)
       return
     }
 
-    alert(
-      repeatCount === 1
-        ? 'Procedimiento guardado'
-        : `${repeatCount} procedimientos guardados`
+    setData(data || [])
+    setLoading(false)
+  }
+
+  const availableYears = useMemo(() => {
+    const years = data
+      .map((item) => item.year)
+      .filter(Boolean)
+      .map(String)
+
+    return ['Todos', ...Array.from(new Set(years))]
+  }, [data])
+
+  const availableRotations = useMemo(() => {
+    const rotations = data
+      .map((item) => item.rotation)
+      .filter(Boolean)
+
+    return ['Todas', ...Array.from(new Set(rotations))]
+  }, [data])
+
+  const filteredData = useMemo(() => {
+    return data.filter((item) => {
+      const yearOk =
+        selectedYear === 'Todos' ||
+        String(item.year) === selectedYear
+
+      const rotationOk =
+        selectedRotation === 'Todas' ||
+        item.rotation === selectedRotation
+
+      return yearOk && rotationOk
+    })
+  }, [data, selectedYear, selectedRotation])
+
+  function filterLabel() {
+    const yearText =
+      selectedYear === 'Todos'
+        ? 'Todos los años'
+        : `Año ${selectedYear}`
+
+    const rotationText =
+      selectedRotation === 'Todas'
+        ? 'Todas las rotaciones'
+        : selectedRotation
+
+    return `${yearText} · ${rotationText}`
+  }
+
+  async function loadLogo() {
+    try {
+      const response = await fetch('/logo.png')
+      return await response.arrayBuffer()
+    } catch {
+      return null
+    }
+  }
+
+  async function exportWord() {
+    if (filteredData.length === 0) {
+      alert('No hay procedimientos para exportar con los filtros seleccionados')
+      return
+    }
+
+    const logoBuffer = await loadLogo()
+
+    const doc = new Document({
+      sections: [
+        {
+          children: [
+            ...(logoBuffer
+              ? [
+                  new Paragraph({
+                    alignment: AlignmentType.RIGHT,
+                    children: [
+                      new ImageRun({
+                        type: 'png',
+                        data: logoBuffer,
+                        transformation: {
+                          width: 120,
+                          height: 120
+                        }
+                      })
+                    ]
+                  })
+                ]
+              : []),
+
+            new Paragraph({
+              alignment: AlignmentType.CENTER,
+              heading: HeadingLevel.TITLE,
+              children: [
+                new TextRun({
+                  text: 'Bitácora de Procedimientos',
+                  bold: true,
+                  size: 36
+                })
+              ]
+            }),
+
+            new Paragraph({
+              alignment: AlignmentType.CENTER,
+              children: [
+                new TextRun({
+                  text: 'Medicina Física y Rehabilitación',
+                  italics: true,
+                  size: 28
+                })
+              ]
+            }),
+
+            new Paragraph({
+              text: `Residente: ${residentName}`
+            }),
+
+            new Paragraph({
+              text: `Filtro: ${filterLabel()}`
+            }),
+
+            new Paragraph({
+              text: `Fecha de exportación: ${new Date().toLocaleDateString('es-CL')}`
+            }),
+
+            new Paragraph({
+              text: ''
+            }),
+
+            new Table({
+              width: {
+                size: 100,
+                type: WidthType.PERCENTAGE
+              },
+
+              rows: [
+                new TableRow({
+                  children: [
+                    'Fecha',
+                    'Procedimiento',
+                    'Categoría',
+                    'Modalidad',
+                    'Tutor',
+                    'Rotación',
+                    'Comentarios'
+                  ].map((header) =>
+                    new TableCell({
+                      children: [
+                        new Paragraph({
+                          children: [
+                            new TextRun({
+                              text: header,
+                              bold: true
+                            })
+                          ]
+                        })
+                      ]
+                    })
+                  )
+                }),
+
+                ...filteredData.map((item) =>
+                  new TableRow({
+                    children: [
+                      item.procedure_date || '',
+                      item.procedure_name || '',
+                      item.category || '',
+                      item.mode || '',
+                      item.tutor || '',
+                      item.rotation || '',
+                      cleanComment(item.comments)
+                    ].map((value) =>
+                      new TableCell({
+                        children: [
+                          new Paragraph(String(value))
+                        ]
+                      })
+                    )
+                  })
+                )
+              ]
+            }),
+
+            new Paragraph({
+              text: ''
+            }),
+
+            new Paragraph({
+              text: 'Firma docente a cargo:'
+            }),
+
+            new Paragraph({
+              text: ''
+            }),
+
+            new Paragraph({
+              text: '________________________________________'
+            })
+          ]
+        }
+      ]
+    })
+
+    const blob = await Packer.toBlob(doc)
+
+    const url = window.URL.createObjectURL(blob)
+
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'Bitacora-de-Procedimientos.docx'
+
+    document.body.appendChild(a)
+    a.click()
+
+    window.URL.revokeObjectURL(url)
+    document.body.removeChild(a)
+  }
+
+  async function exportPDF() {
+    if (filteredData.length === 0) {
+      alert('No hay procedimientos para exportar con los filtros seleccionados')
+      return
+    }
+
+    const doc = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4'
+    })
+
+    try {
+      const response = await fetch('/logo.png')
+      const blob = await response.blob()
+
+      const reader = new FileReader()
+
+      reader.onloadend = function () {
+        const base64data = reader.result as string
+
+        doc.addImage(
+          base64data,
+          'PNG',
+          160,
+          10,
+          30,
+          30
+        )
+
+        finalizePdf(doc)
+      }
+
+      reader.readAsDataURL(blob)
+    } catch {
+      finalizePdf(doc)
+    }
+  }
+
+  function finalizePdf(doc: jsPDF) {
+    doc.setFontSize(20)
+
+    doc.text(
+      'Bitácora de Procedimientos',
+      105,
+      18,
+      {
+        align: 'center'
+      }
     )
 
-    setSelectedCategory('')
-    setSelectedProcedure('')
-    setCustomProcedure('')
+    doc.setFontSize(13)
 
-    setForm({
-      year: 1,
-      rotation: '',
-      tutor: '',
-      mode: 'Realiza',
-      procedure_date: '',
-      repeat_count: 1,
-      comments: ''
+    doc.text(
+      'Medicina Física y Rehabilitación',
+      105,
+      26,
+      {
+        align: 'center'
+      }
+    )
+
+    doc.setFontSize(10)
+
+    doc.text(
+      `Residente: ${residentName}`,
+      14,
+      40
+    )
+
+    doc.text(
+      `Filtro: ${filterLabel()}`,
+      14,
+      46
+    )
+
+    doc.text(
+      `Fecha de exportación: ${new Date().toLocaleDateString('es-CL')}`,
+      14,
+      52
+    )
+
+    autoTable(doc, {
+      startY: 60,
+
+      head: [[
+        'Fecha',
+        'Procedimiento',
+        'Categoría',
+        'Modalidad',
+        'Tutor',
+        'Rotación',
+        'Comentarios'
+      ]],
+
+      body: filteredData.map((item) => [
+        item.procedure_date || '',
+        item.procedure_name || '',
+        item.category || '',
+        item.mode || '',
+        item.tutor || '',
+        item.rotation || '',
+        cleanComment(item.comments)
+      ]),
+
+      styles: {
+        fontSize: 7,
+        cellPadding: 2,
+        overflow: 'linebreak',
+        valign: 'top'
+      },
+
+      headStyles: {
+        fillColor: [15, 23, 42]
+      },
+
+      columnStyles: {
+        0: { cellWidth: 16 },
+        1: { cellWidth: 32 },
+        2: { cellWidth: 24 },
+        3: { cellWidth: 16 },
+        4: { cellWidth: 24 },
+        5: { cellWidth: 24 },
+        6: { cellWidth: 40 }
+      },
+
+      margin: {
+        left: 8,
+        right: 8
+      }
     })
+
+    const finalY = (doc as any).lastAutoTable?.finalY || 170
+
+    doc.text(
+      'Firma docente a cargo:',
+      14,
+      finalY + 16
+    )
+
+    doc.line(
+      14,
+      finalY + 26,
+      95,
+      finalY + 26
+    )
+
+    doc.save('Bitacora-de-Procedimientos.pdf')
+  }
+
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-slate-100 p-6 flex items-center justify-center">
+        <p className="text-slate-900 text-lg font-semibold">
+          Cargando...
+        </p>
+      </main>
+    )
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 pb-40">
-      <SelectBlock label="Año">
-        <select
-          value={form.year}
-          onChange={(e) => updateField('year', Number(e.target.value))}
-          className="w-full rounded-2xl border border-slate-500 bg-white p-4 text-slate-900 text-lg"
-        >
-          <option value={1}>Primer año</option>
-          <option value={2}>Segundo año</option>
-          <option value={3}>Tercer año</option>
-        </select>
-      </SelectBlock>
+    <main className="min-h-screen pb-28 bg-slate-100 p-6 font-[Aptos,Inter,-apple-system,BlinkMacSystemFont,Segoe_UI,sans-serif]">
+      <div className="max-w-2xl mx-auto space-y-6">
+        <div className="text-center space-y-2">
+          <h1 className="text-4xl font-bold text-slate-950">
+            Exportar
+          </h1>
 
-      <SelectBlock label="Rotación">
-        <select
-          value={form.rotation}
-          onChange={(e) => updateField('rotation', e.target.value)}
-          className="w-full rounded-2xl border border-slate-500 bg-white p-4 text-slate-900 text-lg"
-        >
-          <option value="">Seleccionar rotación</option>
+          <p className="text-slate-700 text-lg">
+            Descarga tu bitácora completa o filtrada por año y rotación.
+          </p>
+        </div>
 
-          {rotations.map((rotation) => (
-            <option key={rotation} value={rotation}>
-              {rotation}
-            </option>
-          ))}
-        </select>
-      </SelectBlock>
+        <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 space-y-5">
+          <div>
+            <label className="block mb-2 font-semibold text-slate-900 text-lg">
+              Año
+            </label>
 
-      <SelectBlock label="Procedimiento">
-        <select
-          value={selectedProcedure}
-          onChange={(e) => handleProcedureChange(e.target.value)}
-          className="w-full rounded-2xl border border-slate-500 bg-white p-4 text-slate-900 text-lg"
-        >
-          <option value="">Seleccionar procedimiento</option>
-
-          {procedures.map((category) => (
-            <optgroup key={category.category} label={category.category}>
-              {category.items.map((item) => (
-                <option key={item.name} value={item.name}>
-                  {item.name}
+            <select
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(e.target.value)}
+              className="w-full rounded-2xl border border-slate-500 bg-white p-4 text-slate-900 text-lg"
+            >
+              {availableYears.map((year) => (
+                <option key={year} value={year}>
+                  {year === 'Todos' ? 'Todos los años' : `Año ${year}`}
                 </option>
               ))}
-            </optgroup>
-          ))}
-        </select>
+            </select>
+          </div>
 
-        {selectedCategory && (
-          <p className="mt-2 text-slate-700 text-sm">
-            Categoría: {selectedCategory}
+          <div>
+            <label className="block mb-2 font-semibold text-slate-900 text-lg">
+              Rotación
+            </label>
+
+            <select
+              value={selectedRotation}
+              onChange={(e) => setSelectedRotation(e.target.value)}
+              className="w-full rounded-2xl border border-slate-500 bg-white p-4 text-slate-900 text-lg"
+            >
+              {availableRotations.map((rotation) => (
+                <option key={rotation} value={rotation}>
+                  {rotation === 'Todas' ? 'Todas las rotaciones' : rotation}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200">
+            <p className="text-slate-900 font-semibold">
+              Procedimientos a exportar: {filteredData.length}
+            </p>
+
+            <p className="text-slate-700 text-sm mt-1">
+              {filterLabel()}
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={exportWord}
+            className="w-full bg-slate-900 text-white rounded-2xl p-5 text-xl font-semibold"
+          >
+            Exportar a Word
+          </button>
+
+          <button
+            type="button"
+            onClick={exportPDF}
+            className="w-full bg-red-700 text-white rounded-2xl p-5 text-xl font-semibold"
+          >
+            Exportar a PDF
+          </button>
+
+          <p className="text-sm text-slate-700 text-center pt-2">
+            Para mejor compatibilidad se recomienda abrir el documento en computador
+            o exportarlo como PDF.
           </p>
-        )}
-      </SelectBlock>
-
-      {selectedProcedure === 'Otro procedimiento' && (
-        <SelectBlock label="Nombre del procedimiento">
-          <input
-            type="text"
-            value={customProcedure}
-            onChange={(e) => setCustomProcedure(e.target.value)}
-            placeholder="Ej: procedimiento no listado"
-            className="w-full rounded-2xl border border-slate-500 bg-white p-4 text-slate-900 text-lg"
-          />
-        </SelectBlock>
-      )}
-
-      <SelectBlock label="Modalidad">
-        <select
-          value={form.mode}
-          onChange={(e) => updateField('mode', e.target.value)}
-          className="w-full rounded-2xl border border-slate-500 bg-white p-4 text-slate-900 text-lg"
-        >
-          <option>Realiza</option>
-          <option>Observa</option>
-        </select>
-      </SelectBlock>
-
-      <SelectBlock label="Fecha">
-        <input
-          type="date"
-          value={form.procedure_date}
-          onChange={(e) => updateField('procedure_date', e.target.value)}
-          className="w-full rounded-2xl border border-slate-500 bg-white p-4 text-slate-900 text-lg"
-        />
-      </SelectBlock>
-
-      <SelectBlock label="Tutor responsable">
-        <input
-          type="text"
-          value={form.tutor}
-          onChange={(e) => updateField('tutor', e.target.value)}
-          className="w-full rounded-2xl border border-slate-500 bg-white p-4 text-slate-900 text-lg"
-        />
-      </SelectBlock>
-
-      <SelectBlock label="Cantidad de veces">
-        <input
-          type="number"
-          min={1}
-          max={50}
-          value={form.repeat_count}
-          onChange={(e) =>
-            updateField('repeat_count', Number(e.target.value))
-          }
-          className="w-full rounded-2xl border border-slate-500 bg-white p-4 text-slate-900 text-lg"
-        />
-
-        <p className="mt-2 text-sm text-slate-700">
-          Usa este campo si realizaste u observaste el mismo procedimiento varias veces con el mismo tutor y fecha.
-        </p>
-      </SelectBlock>
-
-      <SelectBlock label="Comentarios">
-        <textarea
-          value={form.comments}
-          onChange={(e) => updateField('comments', e.target.value)}
-          rows={4}
-          className="w-full rounded-2xl border border-slate-500 bg-white p-4 text-slate-900 text-lg"
-        />
-      </SelectBlock>
-
-      <button
-        type="submit"
-        disabled={loading}
-        className="w-full bg-slate-900 text-white rounded-2xl p-5 text-xl font-semibold"
-      >
-        {loading ? 'Guardando...' : 'Guardar procedimiento'}
-      </button>
-    </form>
+        </div>
+      </div>
+    </main>
   )
 }
 
-function SelectBlock({
-  label,
-  children
-}: {
-  label: string
-  children: React.ReactNode
-}) {
-  return (
-    <div>
-      <label className="block mb-2 font-semibold text-slate-900 text-lg">
-        {label}
-      </label>
-
-      {children}
-    </div>
-  )
+function cleanComment(value: string) {
+  return String(value || '')
+    .replace(/\n?Registro repetido \d+\/\d+/gi, '')
+    .trim()
 }
