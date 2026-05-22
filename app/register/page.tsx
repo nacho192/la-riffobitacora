@@ -49,7 +49,7 @@ export default function RegisterPage() {
     }
 
     if (data.user) {
-      setMessage('Cuenta creada. Revisa tu correo para confirmar tu cuenta antes de iniciar sesión.')
+      setMessage('Cuenta creada con éxito.')
       setName('')
       setLastName('')
       setEmail('')
