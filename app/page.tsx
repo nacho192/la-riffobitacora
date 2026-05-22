@@ -25,7 +25,7 @@ export default function HomePage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-slate-100 p-6 flex items-center justify-center">
+      <main className="min-h-screen bg-slate-50 p-6 flex items-center justify-center">
         <p className="text-slate-900 text-lg font-semibold">
           Cargando...
         </p>
@@ -34,7 +34,7 @@ export default function HomePage() {
   }
 
   return (
-    <main className="min-h-screen pb-28 bg-slate-100 p-6 font-[Aptos,Inter,-apple-system,BlinkMacSystemFont,Segoe_UI,sans-serif]">
+    <main className="min-h-screen pb-28 bg-slate-50 p-6 font-[Aptos,Inter,-apple-system,BlinkMacSystemFont,Segoe_UI,sans-serif]">
       <div className="max-w-4xl mx-auto space-y-8">
         <section className="text-center space-y-4 pt-6">
           <h1 className="text-4xl md:text-5xl font-bold text-slate-950 leading-tight tracking-tight">
@@ -46,12 +46,12 @@ export default function HomePage() {
           </p>
 
           <div className="flex justify-center pt-2">
-            <img
-              src="/logo.jpg"
-              alt="Logo"
-              className="w-full max-w-sm md:max-w-md"
-            />
-          </div>
+  <img
+    src="/logo.png"
+    alt="Logo"
+    className="w-64 md:w-72 opacity-95 drop-shadow-sm"
+  />
+</div>
         </section>
 
         <section className="bg-white rounded-3xl p-8 space-y-6 shadow-sm border border-slate-200">
