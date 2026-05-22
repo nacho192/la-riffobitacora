@@ -47,8 +47,8 @@ export default function HomePage() {
 
           <div className="flex justify-center pt-2">
             <img
-              src="/riffobitacora-title.png"
-              alt="La RiffoBitácora"
+              src="/logo.png"
+              alt="Logo"
               className="w-full max-w-sm md:max-w-md"
             />
           </div>
