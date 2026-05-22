@@ -1,142 +1,112 @@
 export const procedures = [
-
   {
-    category: 'Dolor y musculoesquelético',
-
+    category: 'Intervencionismo Musculoesquelético y Dolor',
     items: [
-
       {
-        name: 'Infiltración intra-articular',
-        min_observe: 2,
-        min_perform: 5,
-        description: ''
+        name: 'Infiltración intra-articular: hombro, rodilla, cadera, rizartrosis',
+        min_perform: 15,
+        min_observe: 15
       },
-
       {
-        name: 'Infiltración tendínea',
-        min_observe: 2,
-        min_perform: 5,
-        description: ''
-      },
-
-      {
-        name: 'Puntos gatillo',
-        min_observe: 3,
+        name: 'Infiltración de partes blandas / tendones: bíceps, codo, tobillo, etc.',
         min_perform: 10,
-        description: ''
+        min_observe: 10
       },
-
       {
-        name: 'Ondas de choque',
-        min_observe: 2,
+        name: 'Infiltración de puntos gatillo miofasciales',
+        min_perform: 20,
+        min_observe: 20
+      },
+      {
+        name: 'Bloqueo nervioso periférico: supraescapular, mediano, cubital, etc.',
+        min_perform: 10,
+        min_observe: 10
+      },
+      {
+        name: 'Infiltración de músculos paravertebrales / columna',
         min_perform: 5,
-        description: ''
+        min_observe: 5
       },
-
       {
-        name: 'Parche Qutenza',
-        min_observe: 1,
+        name: 'Terapia de ondas de choque / ESWT',
+        min_perform: 10,
+        min_observe: 10
+      },
+      {
+        name: 'Infiltración de toxina botulínica para manejo de dolor',
         min_perform: 3,
-        description: ''
+        min_observe: 10
+      },
+      {
+        name: 'Aplicación de parche Qutenza para manejo de dolor',
+        min_perform: 0,
+        min_observe: 3
       }
-
     ]
   },
-
   {
-    category: 'Espasticidad y neurorehabilitación',
-
+    category: 'Manejo de la Espasticidad y Neurorehabilitación',
     items: [
-
       {
-        name: 'Toxina botulínica EESS',
-        min_observe: 3,
-        min_perform: 10,
-        description: ''
+        name: 'Toxina botulínica en extremidades superiores',
+        min_perform: 20,
+        min_observe: 15
       },
-
       {
-        name: 'Toxina botulínica EEII',
-        min_observe: 3,
-        min_perform: 10,
-        description: ''
+        name: 'Toxina botulínica en extremidades inferiores',
+        min_perform: 20,
+        min_observe: 15
       },
-
       {
-        name: 'Toxina botulínica sialorrea',
-        min_observe: 1,
-        min_perform: 3,
-        description: ''
-      },
-
-      {
-        name: 'Fenolización',
-        min_observe: 2,
+        name: 'Toxina botulínica en sialorrea / glándulas salivales',
         min_perform: 5,
-        description: ''
+        min_observe: 5
       },
-
       {
-        name: 'Bomba baclofeno',
-        min_observe: 1,
+        name: 'Toxina botulínica en bruxismo',
         min_perform: 2,
-        description: ''
+        min_observe: 5
+      },
+      {
+        name: 'Manejo de bomba de baclofeno: recarga y programación',
+        min_perform: 0,
+        min_observe: 1
+      },
+      {
+        name: 'Fenolización de nervios motores',
+        min_perform: 0,
+        min_observe: 1
       }
-
     ]
   },
-
   {
-    category: 'Electrodiagnóstico y funcional',
-
+    category: 'Diagnóstico y Medicina Funcional',
     items: [
-
       {
-        name: 'EMG',
-        min_observe: 5,
-        min_perform: 20,
-        description: ''
+        name: 'Interpretación de electromiografía y conducción nerviosa / EMG-VCN',
+        min_perform: 0,
+        min_observe: 10
       },
-
       {
-        name: 'VCN',
-        min_observe: 5,
-        min_perform: 20,
-        description: ''
+        name: 'Videofluoroscopía de la deglución',
+        min_perform: 0,
+        min_observe: 3
       },
-
       {
-        name: 'Videofluoroscopía',
-        min_observe: 3,
-        min_perform: 5,
-        description: ''
-      },
-
-      {
-        name: 'VO2 Máx',
-        min_observe: 2,
-        min_perform: 5,
-        description: ''
+        name: 'Consumo máximo de oxígeno / VO2 máx',
+        min_perform: 0,
+        min_observe: 3
       }
-
     ]
-  }
-
-  ,
-
+  },
   {
     category: 'Otros procedimientos',
-
     items: [
-
       {
         name: 'Otro procedimiento',
-        min_observe: 0,
         min_perform: 0,
-        description: ''
+        min_observe: 0
       }
-
     ]
   }
-
 ]
