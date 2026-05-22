@@ -76,8 +76,7 @@ export default function DashboardPage() {
         mode: editing.mode,
         procedure_date: editing.procedure_date,
         tutor: editing.tutor,
-        comments: editing.comments,
-        private_notes: editing.private_notes
+        comments: editing.comments
       })
       .eq('id', editing.id)
 
@@ -90,10 +89,10 @@ export default function DashboardPage() {
     loadProcedures()
   }
 
-  const total = logs.length
-  const realizados = logs.filter((p) => p.mode === 'Realiza').length
-  const observados = logs.filter((p) => p.mode === 'Observa').length
-  const asistidos = logs.filter((p) => p.mode === 'Asiste').length
+  const logsSinAsiste = logs.filter((p) => p.mode !== 'Asiste')
+  const total = logsSinAsiste.length
+  const realizados = logsSinAsiste.filter((p) => p.mode === 'Realiza').length
+  const observados = logsSinAsiste.filter((p) => p.mode === 'Observa').length
 
   return (
     <main className="min-h-screen pb-28 bg-slate-100 p-6 font-[Aptos,Inter,-apple-system,BlinkMacSystemFont,Segoe_UI,sans-serif]">
@@ -110,11 +109,10 @@ export default function DashboardPage() {
           )}
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-3 gap-4">
           <Stat title="Total" value={total} />
           <Stat title="Realizados" value={realizados} />
           <Stat title="Observados" value={observados} />
-          <Stat title="Asistidos" value={asistidos} />
         </div>
 
         {editing && (
@@ -178,7 +176,6 @@ export default function DashboardPage() {
             >
               <option>Realiza</option>
               <option>Observa</option>
-              <option>Asiste</option>
             </select>
 
             <input
@@ -209,16 +206,6 @@ export default function DashboardPage() {
               className="w-full rounded-2xl border border-slate-500 p-4 text-lg text-slate-950"
             />
 
-            <textarea
-              value={editing.private_notes || ''}
-              onChange={(e) =>
-                setEditing({ ...editing, private_notes: e.target.value })
-              }
-              rows={4}
-              placeholder="Notas privadas"
-              className="w-full rounded-2xl border border-slate-500 p-4 text-lg text-slate-950"
-            />
-
             <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={saveEdit}
@@ -243,7 +230,7 @@ export default function DashboardPage() {
           </h2>
 
           <div className="space-y-3">
-            {logs.map((procedure) => (
+            {logsSinAsiste.map((procedure) => (
               <div
                 key={procedure.id}
                 className="border border-slate-300 rounded-2xl p-4 space-y-3"
@@ -290,7 +277,7 @@ export default function DashboardPage() {
               </div>
             ))}
 
-            {logs.length === 0 && (
+            {logsSinAsiste.length === 0 && (
               <p className="text-slate-800 text-center">
                 Aún no hay procedimientos registrados.
               </p>
@@ -311,18 +298,26 @@ export default function DashboardPage() {
 
               <div className="space-y-3">
                 {category.items.map((item) => {
-                  const completed = logs.filter(
+                  const performCurrent = logsSinAsiste.filter(
                     (p) =>
                       p.procedure_name === item.name &&
                       p.mode === 'Realiza'
+                  ).length
+
+                  const observeCurrent = logsSinAsiste.filter(
+                    (p) =>
+                      p.procedure_name === item.name &&
+                      p.mode === 'Observa'
                   ).length
 
                   return (
                     <ProgressCard
                       key={item.name}
                       name={item.name}
-                      current={completed}
-                      required={item.min_perform}
+                      performCurrent={performCurrent}
+                      performRequired={item.min_perform}
+                      observeCurrent={observeCurrent}
+                      observeRequired={item.min_observe}
                     />
                   )
                 })}
@@ -338,7 +333,7 @@ export default function DashboardPage() {
 function Stat({ title, value }: { title: string; value: number }) {
   return (
     <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 text-center">
-      <p className="text-slate-800">{title}</p>
+      <p className="text-slate-800 text-sm md:text-base">{title}</p>
       <h2 className="text-4xl font-bold text-slate-950">{value}</h2>
     </div>
   )

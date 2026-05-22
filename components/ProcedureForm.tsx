@@ -17,6 +17,7 @@ export default function ProcedureForm() {
     tutor: '',
     mode: 'Realiza',
     procedure_date: '',
+    repeat_count: 1,
     comments: ''
   })
 
@@ -62,6 +63,8 @@ export default function ProcedureForm() {
       return
     }
 
+    const repeatCount = Math.max(1, Number(form.repeat_count || 1))
+
     setLoading(true)
 
     const {
@@ -75,8 +78,16 @@ export default function ProcedureForm() {
       return
     }
 
-    const payload = {
-      ...form,
+    const rows = Array.from({ length: repeatCount }, (_, index) => ({
+      year: form.year,
+      rotation: form.rotation,
+      tutor: form.tutor,
+      mode: form.mode,
+      procedure_date: form.procedure_date,
+      comments:
+        repeatCount > 1
+          ? `${form.comments || ''}${form.comments ? '\n' : ''}Registro repetido ${index + 1}/${repeatCount}`
+          : form.comments,
       category: selectedCategory,
       procedure_name: procedureToSave,
       user_id: user.id,
@@ -84,11 +95,11 @@ export default function ProcedureForm() {
         user.user_metadata?.full_name ||
         user.user_metadata?.name ||
         user.email
-    }
+    }))
 
     const { error } = await supabase
       .from('procedures_log')
-      .insert([payload])
+      .insert(rows)
 
     setLoading(false)
 
@@ -97,7 +108,11 @@ export default function ProcedureForm() {
       return
     }
 
-    alert('Procedimiento guardado')
+    alert(
+      repeatCount === 1
+        ? 'Procedimiento guardado'
+        : `${repeatCount} procedimientos guardados`
+    )
 
     setSelectedCategory('')
     setSelectedProcedure('')
@@ -109,17 +124,14 @@ export default function ProcedureForm() {
       tutor: '',
       mode: 'Realiza',
       procedure_date: '',
+      repeat_count: 1,
       comments: ''
     })
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6 pb-40">
-      <div>
-        <label className="block mb-2 font-semibold text-slate-900 text-lg">
-          Año
-        </label>
-
+      <SelectBlock label="Año">
         <select
           value={form.year}
           onChange={(e) => updateField('year', Number(e.target.value))}
@@ -129,13 +141,9 @@ export default function ProcedureForm() {
           <option value={2}>Segundo año</option>
           <option value={3}>Tercer año</option>
         </select>
-      </div>
+      </SelectBlock>
 
-      <div>
-        <label className="block mb-2 font-semibold text-slate-900 text-lg">
-          Rotación
-        </label>
-
+      <SelectBlock label="Rotación">
         <select
           value={form.rotation}
           onChange={(e) => updateField('rotation', e.target.value)}
@@ -149,13 +157,9 @@ export default function ProcedureForm() {
             </option>
           ))}
         </select>
-      </div>
+      </SelectBlock>
 
-      <div>
-        <label className="block mb-2 font-semibold text-slate-900 text-lg">
-          Procedimiento
-        </label>
-
+      <SelectBlock label="Procedimiento">
         <select
           value={selectedProcedure}
           onChange={(e) => handleProcedureChange(e.target.value)}
@@ -179,14 +183,10 @@ export default function ProcedureForm() {
             Categoría: {selectedCategory}
           </p>
         )}
-      </div>
+      </SelectBlock>
 
       {selectedProcedure === 'Otro procedimiento' && (
-        <div>
-          <label className="block mb-2 font-semibold text-slate-900 text-lg">
-            Nombre del procedimiento
-          </label>
-
+        <SelectBlock label="Nombre del procedimiento">
           <input
             type="text"
             value={customProcedure}
@@ -194,14 +194,10 @@ export default function ProcedureForm() {
             placeholder="Ej: procedimiento no listado"
             className="w-full rounded-2xl border border-slate-500 bg-white p-4 text-slate-900 text-lg"
           />
-        </div>
+        </SelectBlock>
       )}
 
-      <div>
-        <label className="block mb-2 font-semibold text-slate-900 text-lg">
-          Modalidad
-        </label>
-
+      <SelectBlock label="Modalidad">
         <select
           value={form.mode}
           onChange={(e) => updateField('mode', e.target.value)}
@@ -209,48 +205,52 @@ export default function ProcedureForm() {
         >
           <option>Realiza</option>
           <option>Observa</option>
-          <option>Asiste</option>
         </select>
-      </div>
+      </SelectBlock>
 
-      <div>
-        <label className="block mb-2 font-semibold text-slate-900 text-lg">
-          Fecha
-        </label>
-
+      <SelectBlock label="Fecha">
         <input
           type="date"
           value={form.procedure_date}
           onChange={(e) => updateField('procedure_date', e.target.value)}
           className="w-full rounded-2xl border border-slate-500 bg-white p-4 text-slate-900 text-lg"
         />
-      </div>
+      </SelectBlock>
 
-      <div>
-        <label className="block mb-2 font-semibold text-slate-900 text-lg">
-          Tutor responsable
-        </label>
-
+      <SelectBlock label="Tutor responsable">
         <input
           type="text"
           value={form.tutor}
           onChange={(e) => updateField('tutor', e.target.value)}
           className="w-full rounded-2xl border border-slate-500 bg-white p-4 text-slate-900 text-lg"
         />
-      </div>
+      </SelectBlock>
 
-      <div>
-        <label className="block mb-2 font-semibold text-slate-900 text-lg">
-          Comentarios
-        </label>
+      <SelectBlock label="Cantidad de veces">
+        <input
+          type="number"
+          min={1}
+          max={50}
+          value={form.repeat_count}
+          onChange={(e) =>
+            updateField('repeat_count', Number(e.target.value))
+          }
+          className="w-full rounded-2xl border border-slate-500 bg-white p-4 text-slate-900 text-lg"
+        />
 
+        <p className="mt-2 text-sm text-slate-700">
+          Usa este campo si realizaste u observaste el mismo procedimiento varias veces con el mismo tutor y fecha.
+        </p>
+      </SelectBlock>
+
+      <SelectBlock label="Comentarios">
         <textarea
           value={form.comments}
           onChange={(e) => updateField('comments', e.target.value)}
           rows={4}
           className="w-full rounded-2xl border border-slate-500 bg-white p-4 text-slate-900 text-lg"
         />
-      </div>
+      </SelectBlock>
 
       <button
         type="submit"
@@ -260,5 +260,23 @@ export default function ProcedureForm() {
         {loading ? 'Guardando...' : 'Guardar procedimiento'}
       </button>
     </form>
+  )
+}
+
+function SelectBlock({
+  label,
+  children
+}: {
+  label: string
+  children: React.ReactNode
+}) {
+  return (
+    <div>
+      <label className="block mb-2 font-semibold text-slate-900 text-lg">
+        {label}
+      </label>
+
+      {children}
+    </div>
   )
 }
