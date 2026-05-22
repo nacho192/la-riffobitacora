@@ -16,7 +16,7 @@ export default function MisProcedimientosPage() {
     dose: '',
     materials: '',
     tips: '',
-    references: ''
+    reference_notes: ''
   })
 
   useEffect(() => {
@@ -70,6 +70,7 @@ export default function MisProcedimientosPage() {
 
     if (!user) {
       alert('Debes iniciar sesión')
+      setSaving(false)
       window.location.href = '/login'
       return
     }
@@ -101,7 +102,7 @@ export default function MisProcedimientosPage() {
       dose: '',
       materials: '',
       tips: '',
-      references: ''
+      reference_notes: ''
     })
 
     loadItems()
@@ -119,7 +120,7 @@ export default function MisProcedimientosPage() {
         dose: editing.dose,
         materials: editing.materials,
         tips: editing.tips,
-        references: editing.references
+        reference_notes: editing.reference_notes
       })
       .eq('id', editing.id)
 
@@ -215,8 +216,8 @@ export default function MisProcedimientosPage() {
           />
 
           <textarea
-            value={form.references}
-            onChange={(e) => updateField('references', e.target.value)}
+            value={form.reference_notes}
+            onChange={(e) => updateField('reference_notes', e.target.value)}
             rows={3}
             placeholder="Referencias / links / notas"
             className="w-full rounded-2xl border border-slate-500 bg-white p-4 text-lg text-slate-950"
@@ -271,7 +272,7 @@ export default function MisProcedimientosPage() {
                 <Info title="Dosis" text={item.dose} />
                 <Info title="Materiales" text={item.materials} />
                 <Info title="Tips" text={item.tips} />
-                <Info title="Referencias" text={item.references} />
+                <Info title="Referencias" text={item.reference_notes} />
 
                 <div className="grid grid-cols-2 gap-3">
                   <button
@@ -306,6 +307,7 @@ export default function MisProcedimientosPage() {
               onChange={(e) =>
                 setEditing({ ...editing, title: e.target.value })
               }
+              placeholder="Nombre del procedimiento"
               className="w-full rounded-2xl border border-slate-500 p-4 text-lg text-slate-950"
             />
 
@@ -314,6 +316,7 @@ export default function MisProcedimientosPage() {
               onChange={(e) =>
                 setEditing({ ...editing, category: e.target.value })
               }
+              placeholder="Categoría"
               className="w-full rounded-2xl border border-slate-500 p-4 text-lg text-slate-950"
             />
 
@@ -323,6 +326,7 @@ export default function MisProcedimientosPage() {
                 setEditing({ ...editing, technique: e.target.value })
               }
               rows={4}
+              placeholder="Técnica / pasos"
               className="w-full rounded-2xl border border-slate-500 p-4 text-lg text-slate-950"
             />
 
@@ -332,6 +336,7 @@ export default function MisProcedimientosPage() {
                 setEditing({ ...editing, dose: e.target.value })
               }
               rows={3}
+              placeholder="Dosis"
               className="w-full rounded-2xl border border-slate-500 p-4 text-lg text-slate-950"
             />
 
@@ -341,6 +346,7 @@ export default function MisProcedimientosPage() {
                 setEditing({ ...editing, materials: e.target.value })
               }
               rows={3}
+              placeholder="Materiales"
               className="w-full rounded-2xl border border-slate-500 p-4 text-lg text-slate-950"
             />
 
@@ -350,15 +356,20 @@ export default function MisProcedimientosPage() {
                 setEditing({ ...editing, tips: e.target.value })
               }
               rows={3}
+              placeholder="Tips / consideraciones"
               className="w-full rounded-2xl border border-slate-500 p-4 text-lg text-slate-950"
             />
 
             <textarea
-              value={editing.references || ''}
+              value={editing.reference_notes || ''}
               onChange={(e) =>
-                setEditing({ ...editing, references: e.target.value })
+                setEditing({
+                  ...editing,
+                  reference_notes: e.target.value
+                })
               }
               rows={3}
+              placeholder="Referencias / links / notas"
               className="w-full rounded-2xl border border-slate-500 p-4 text-lg text-slate-950"
             />
 

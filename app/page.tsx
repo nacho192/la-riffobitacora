@@ -98,11 +98,11 @@ export default function HomePage() {
           <button
             type="button"
             onClick={() => {
-              window.location.href = '/mis-procedimientos'
+              window.location.href = '/nuevo'
             }}
             className="w-full bg-slate-900 text-white rounded-2xl p-5 text-xl font-semibold active:scale-95"
           >
-            Ir a Mis procedimientos
+            Registrar nuevo procedimiento
           </button>
         </section>
       </div>
