@@ -17,8 +17,7 @@ export default function ProcedureForm() {
     tutor: '',
     mode: 'Realiza',
     procedure_date: '',
-    comments: '',
-    private_notes: ''
+    comments: ''
   })
 
   function updateField(field: string, value: string | number) {
@@ -110,8 +109,7 @@ export default function ProcedureForm() {
       tutor: '',
       mode: 'Realiza',
       procedure_date: '',
-      comments: '',
-      private_notes: ''
+      comments: ''
     })
   }
 
@@ -125,7 +123,7 @@ export default function ProcedureForm() {
         <select
           value={form.year}
           onChange={(e) => updateField('year', Number(e.target.value))}
-          className="w-full rounded-2xl border border-slate-500 bg-white p-4 text-slate-900 text-lg appearance-auto"
+          className="w-full rounded-2xl border border-slate-500 bg-white p-4 text-slate-900 text-lg"
         >
           <option value={1}>Primer año</option>
           <option value={2}>Segundo año</option>
@@ -141,7 +139,7 @@ export default function ProcedureForm() {
         <select
           value={form.rotation}
           onChange={(e) => updateField('rotation', e.target.value)}
-          className="w-full rounded-2xl border border-slate-500 bg-white p-4 text-slate-900 text-lg appearance-auto"
+          className="w-full rounded-2xl border border-slate-500 bg-white p-4 text-slate-900 text-lg"
         >
           <option value="">Seleccionar rotación</option>
 
@@ -161,7 +159,7 @@ export default function ProcedureForm() {
         <select
           value={selectedProcedure}
           onChange={(e) => handleProcedureChange(e.target.value)}
-          className="w-full rounded-2xl border border-slate-500 bg-white p-4 text-slate-900 text-lg appearance-auto"
+          className="w-full rounded-2xl border border-slate-500 bg-white p-4 text-slate-900 text-lg"
         >
           <option value="">Seleccionar procedimiento</option>
 
@@ -169,7 +167,7 @@ export default function ProcedureForm() {
             <optgroup key={category.category} label={category.category}>
               {category.items.map((item) => (
                 <option key={item.name} value={item.name}>
-                  {item.name} — realizar {item.min_perform} / observar {item.min_observe}
+                  {item.name}
                 </option>
               ))}
             </optgroup>
@@ -207,7 +205,7 @@ export default function ProcedureForm() {
         <select
           value={form.mode}
           onChange={(e) => updateField('mode', e.target.value)}
-          className="w-full rounded-2xl border border-slate-500 bg-white p-4 text-slate-900 text-lg appearance-auto"
+          className="w-full rounded-2xl border border-slate-500 bg-white p-4 text-slate-900 text-lg"
         >
           <option>Realiza</option>
           <option>Observa</option>
@@ -250,20 +248,6 @@ export default function ProcedureForm() {
           value={form.comments}
           onChange={(e) => updateField('comments', e.target.value)}
           rows={4}
-          className="w-full rounded-2xl border border-slate-500 bg-white p-4 text-slate-900 text-lg"
-        />
-      </div>
-
-      <div>
-        <label className="block mb-2 font-semibold text-slate-900 text-lg">
-          Descripción privada del procedimiento
-        </label>
-
-        <textarea
-          value={form.private_notes}
-          onChange={(e) => updateField('private_notes', e.target.value)}
-          rows={5}
-          placeholder="Dosis, materiales, técnica, tips..."
           className="w-full rounded-2xl border border-slate-500 bg-white p-4 text-slate-900 text-lg"
         />
       </div>
