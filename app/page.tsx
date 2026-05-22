@@ -38,12 +38,10 @@ export default function HomePage() {
       <div className="max-w-4xl mx-auto space-y-8">
         <section className="text-center space-y-4 pt-6">
           <h1 className="text-4xl md:text-5xl font-bold text-slate-950 leading-tight tracking-tight">
-            Bitácora digital para Residentes de Fisiatría
+            Bitácora Digital para Residentes
           </h1>
 
-          <p className="text-xl md:text-2xl text-slate-700 font-medium">
-            Universidad del Desarrollo
-          </p>
+
 
           <div className="flex justify-center pt-2">
   <img
