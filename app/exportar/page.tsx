@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 
 import jsPDF from 'jspdf'
@@ -24,6 +24,9 @@ export default function ExportarPage() {
   const [data, setData] = useState<any[]>([])
   const [residentName, setResidentName] = useState('')
   const [loading, setLoading] = useState(true)
+
+  const [selectedYear, setSelectedYear] = useState('Todos')
+  const [selectedRotation, setSelectedRotation] = useState('Todas')
 
   useEffect(() => {
     loadData()
@@ -61,9 +64,54 @@ export default function ExportarPage() {
     setLoading(false)
   }
 
+  const availableYears = useMemo(() => {
+    const years = data
+      .map((item) => item.year)
+      .filter(Boolean)
+      .map(String)
+
+    return ['Todos', ...Array.from(new Set(years))]
+  }, [data])
+
+  const availableRotations = useMemo(() => {
+    const rotations = data
+      .map((item) => item.rotation)
+      .filter(Boolean)
+
+    return ['Todas', ...Array.from(new Set(rotations))]
+  }, [data])
+
+  const filteredData = useMemo(() => {
+    return data.filter((item) => {
+      const yearOk =
+        selectedYear === 'Todos' ||
+        String(item.year) === selectedYear
+
+      const rotationOk =
+        selectedRotation === 'Todas' ||
+        item.rotation === selectedRotation
+
+      return yearOk && rotationOk
+    })
+  }, [data, selectedYear, selectedRotation])
+
+  function filterLabel() {
+    const yearText =
+      selectedYear === 'Todos'
+        ? 'Todos los años'
+        : `Año ${selectedYear}`
+
+    const rotationText =
+      selectedRotation === 'Todas'
+        ? 'Todas las rotaciones'
+        : selectedRotation
+
+    return `${yearText} · ${rotationText}`
+  }
+
   async function loadLogo() {
     try {
-      const response = await fetch('/logo.jpg')
+      const response = await fetch('/logo.png')
       return await response.arrayBuffer()
     } catch {
       return null
@@ -71,6 +119,11 @@ export default function ExportarPage() {
   }
 
   async function exportWord() {
+    if (filteredData.length === 0) {
+      alert('No hay procedimientos para exportar con los filtros seleccionados')
+      return
+    }
+
     const logoBuffer = await loadLogo()
 
     const doc = new Document({
@@ -83,7 +136,7 @@ export default function ExportarPage() {
                     alignment: AlignmentType.RIGHT,
                     children: [
                       new ImageRun({
-                        type: 'jpg',
+                        type: 'png',
                         data: logoBuffer,
                         transformation: {
                           width: 120,
@@ -123,6 +176,10 @@ export default function ExportarPage() {
             }),
 
             new Paragraph({
+              text: `Filtro: ${filterLabel()}`
+            }),
+
+            new Paragraph({
               text: `Fecha de exportación: ${new Date().toLocaleDateString('es-CL')}`
             }),
 
@@ -146,43 +203,40 @@ export default function ExportarPage() {
                     'Tutor',
                     'Rotación',
                     'Comentarios'
-                  ].map(
-                    (header) =>
-                      new TableCell({
-                        children: [
-                          new Paragraph({
-                            children: [
-                              new TextRun({
-                                text: header,
-                                bold: true
-                              })
-                            ]
-                          })
-                        ]
-                      })
+                  ].map((header) =>
+                    new TableCell({
+                      children: [
+                        new Paragraph({
+                          children: [
+                            new TextRun({
+                              text: header,
+                              bold: true
+                            })
+                          ]
+                        })
+                      ]
+                    })
                   )
                 }),
 
-                ...data.map(
-                  (item) =>
-                    new TableRow({
-                      children: [
-                        item.procedure_date || '',
-                        item.procedure_name || '',
-                        item.category || '',
-                        item.mode || '',
-                        item.tutor || '',
-                        item.rotation || '',
-                        item.comments || ''
-                      ].map(
-                        (value) =>
-                          new TableCell({
-                            children: [
-                              new Paragraph(String(value))
-                            ]
-                          })
-                      )
-                    })
+                ...filteredData.map((item) =>
+                  new TableRow({
+                    children: [
+                      item.procedure_date || '',
+                      item.procedure_name || '',
+                      item.category || '',
+                      item.mode || '',
+                      item.tutor || '',
+                      item.rotation || '',
+                      item.comments || ''
+                    ].map((value) =>
+                      new TableCell({
+                        children: [
+                          new Paragraph(String(value))
+                        ]
+                      })
+                    )
+                  })
                 )
               ]
             }),
@@ -223,6 +277,11 @@ export default function ExportarPage() {
   }
 
   async function exportPDF() {
+    if (filteredData.length === 0) {
+      alert('No hay procedimientos para exportar con los filtros seleccionados')
+      return
+    }
+
     const doc = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',
@@ -230,7 +289,7 @@ export default function ExportarPage() {
     })
 
     try {
-      const response = await fetch('/logo.jpg')
+      const response = await fetch('/logo.png')
       const blob = await response.blob()
 
       const reader = new FileReader()
@@ -240,7 +299,7 @@ export default function ExportarPage() {
 
         doc.addImage(
           base64data,
-          'JPEG',
+          'PNG',
           160,
           10,
           30,
@@ -279,7 +338,7 @@ export default function ExportarPage() {
       }
     )
 
-    doc.setFontSize(11)
+    doc.setFontSize(10)
 
     doc.text(
       `Residente: ${residentName}`,
@@ -288,13 +347,19 @@ export default function ExportarPage() {
     )
 
     doc.text(
-      `Fecha de exportación: ${new Date().toLocaleDateString('es-CL')}`,
+      `Filtro: ${filterLabel()}`,
       14,
       46
     )
 
+    doc.text(
+      `Fecha de exportación: ${new Date().toLocaleDateString('es-CL')}`,
+      14,
+      52
+    )
+
     autoTable(doc, {
-      startY: 54,
+      startY: 60,
 
       head: [[
         'Fecha',
@@ -306,7 +371,7 @@ export default function ExportarPage() {
         'Comentarios'
       ]],
 
-      body: data.map((item) => [
+      body: filteredData.map((item) => [
         item.procedure_date || '',
         item.procedure_name || '',
         item.category || '',
@@ -380,11 +445,57 @@ export default function ExportarPage() {
           </h1>
 
           <p className="text-slate-700 text-lg">
-            Descarga tu bitácora en Word o PDF.
+            Descarga tu bitácora completa o filtrada por año y rotación.
           </p>
         </div>
 
-        <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 space-y-4">
+        <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 space-y-5">
+          <div>
+            <label className="block mb-2 font-semibold text-slate-900 text-lg">
+              Año
+            </label>
+
+            <select
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(e.target.value)}
+              className="w-full rounded-2xl border border-slate-500 bg-white p-4 text-slate-900 text-lg"
+            >
+              {availableYears.map((year) => (
+                <option key={year} value={year}>
+                  {year === 'Todos' ? 'Todos los años' : `Año ${year}`}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block mb-2 font-semibold text-slate-900 text-lg">
+              Rotación
+            </label>
+
+            <select
+              value={selectedRotation}
+              onChange={(e) => setSelectedRotation(e.target.value)}
+              className="w-full rounded-2xl border border-slate-500 bg-white p-4 text-slate-900 text-lg"
+            >
+              {availableRotations.map((rotation) => (
+                <option key={rotation} value={rotation}>
+                  {rotation === 'Todas' ? 'Todas las rotaciones' : rotation}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200">
+            <p className="text-slate-900 font-semibold">
+              Procedimientos a exportar: {filteredData.length}
+            </p>
+
+            <p className="text-slate-700 text-sm mt-1">
+              {filterLabel()}
+            </p>
+          </div>
+
           <button
             type="button"
             onClick={exportWord}
