@@ -23,7 +23,7 @@ export default function BottomNav() {
     },
     {
       href: '/mis-procedimientos',
-      label: 'Mis procedimientos',
+      label: 'Mis notas',
       icon: '/icon-mis-procedimientos.png'
     },
     {
