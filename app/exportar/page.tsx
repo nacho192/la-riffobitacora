@@ -224,7 +224,7 @@ export default function ExportarPage() {
 
   async function exportPDF() {
     const doc = new jsPDF({
-      orientation: 'landscape',
+      orientation: 'portrait',
       unit: 'mm',
       format: 'a4'
     })
@@ -241,10 +241,10 @@ export default function ExportarPage() {
         doc.addImage(
           base64data,
           'JPEG',
-          240,
+          160,
           10,
-          35,
-          35
+          30,
+          30
         )
 
         finalizePdf(doc)
@@ -261,7 +261,7 @@ export default function ExportarPage() {
 
     doc.text(
       'Bitácora de Procedimientos',
-      148,
+      105,
       18,
       {
         align: 'center'
@@ -272,7 +272,7 @@ export default function ExportarPage() {
 
     doc.text(
       'Medicina Física y Rehabilitación',
-      148,
+      105,
       26,
       {
         align: 'center'
@@ -317,7 +317,7 @@ export default function ExportarPage() {
       ]),
 
       styles: {
-        fontSize: 8,
+        fontSize: 7,
         cellPadding: 2,
         overflow: 'linebreak',
         valign: 'top'
@@ -328,13 +328,13 @@ export default function ExportarPage() {
       },
 
       columnStyles: {
-        0: { cellWidth: 20 },
-        1: { cellWidth: 45 },
-        2: { cellWidth: 40 },
-        3: { cellWidth: 20 },
-        4: { cellWidth: 35 },
-        5: { cellWidth: 40 },
-        6: { cellWidth: 60 }
+        0: { cellWidth: 16 },
+        1: { cellWidth: 32 },
+        2: { cellWidth: 24 },
+        3: { cellWidth: 16 },
+        4: { cellWidth: 24 },
+        5: { cellWidth: 24 },
+        6: { cellWidth: 40 }
       },
 
       margin: {
