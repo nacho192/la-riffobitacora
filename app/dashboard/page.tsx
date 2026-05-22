@@ -11,6 +11,8 @@ export default function DashboardPage() {
   const [residentName, setResidentName] = useState('')
   const [editing, setEditing] = useState<any | null>(null)
 
+  const [section, setSection] = useState<'recent' | 'progress'>('recent')
+
   useEffect(() => {
     loadProcedures()
   }, [])
@@ -90,9 +92,16 @@ export default function DashboardPage() {
   }
 
   const logsSinAsiste = logs.filter((p) => p.mode !== 'Asiste')
+
   const total = logsSinAsiste.length
-  const realizados = logsSinAsiste.filter((p) => p.mode === 'Realiza').length
-  const observados = logsSinAsiste.filter((p) => p.mode === 'Observa').length
+
+  const realizados = logsSinAsiste.filter(
+    (p) => p.mode === 'Realiza'
+  ).length
+
+  const observados = logsSinAsiste.filter(
+    (p) => p.mode === 'Observa'
+  ).length
 
   return (
     <main className="min-h-screen pb-28 bg-slate-100 p-6 font-[Aptos,Inter,-apple-system,BlinkMacSystemFont,Segoe_UI,sans-serif]">
@@ -115,6 +124,28 @@ export default function DashboardPage() {
           <Stat title="Observados" value={observados} />
         </div>
 
+        <section className="bg-white rounded-3xl p-5 shadow-sm border border-slate-200">
+          <label className="block mb-2 font-semibold text-slate-900 text-lg">
+            Ver sección
+          </label>
+
+          <select
+            value={section}
+            onChange={(e) =>
+              setSection(e.target.value as 'recent' | 'progress')
+            }
+            className="w-full rounded-2xl border border-slate-500 bg-white p-4 text-slate-900 text-lg"
+          >
+            <option value="recent">
+              Procedimientos recientes
+            </option>
+
+            <option value="progress">
+              Progreso por procedimiento
+            </option>
+          </select>
+        </section>
+
         {editing && (
           <div className="bg-white rounded-3xl p-6 space-y-4 border border-slate-200 shadow-sm">
             <h2 className="text-2xl font-bold text-slate-950 text-center">
@@ -124,7 +155,10 @@ export default function DashboardPage() {
             <select
               value={editing.year || 1}
               onChange={(e) =>
-                setEditing({ ...editing, year: Number(e.target.value) })
+                setEditing({
+                  ...editing,
+                  year: Number(e.target.value)
+                })
               }
               className="w-full rounded-2xl border border-slate-500 p-4 text-lg text-slate-950"
             >
@@ -136,7 +170,10 @@ export default function DashboardPage() {
             <select
               value={editing.rotation || ''}
               onChange={(e) =>
-                setEditing({ ...editing, rotation: e.target.value })
+                setEditing({
+                  ...editing,
+                  rotation: e.target.value
+                })
               }
               className="w-full rounded-2xl border border-slate-500 p-4 text-lg text-slate-950"
             >
@@ -152,7 +189,10 @@ export default function DashboardPage() {
             <input
               value={editing.procedure_name || ''}
               onChange={(e) =>
-                setEditing({ ...editing, procedure_name: e.target.value })
+                setEditing({
+                  ...editing,
+                  procedure_name: e.target.value
+                })
               }
               placeholder="Procedimiento"
               className="w-full rounded-2xl border border-slate-500 p-4 text-lg text-slate-950"
@@ -161,7 +201,10 @@ export default function DashboardPage() {
             <input
               value={editing.category || ''}
               onChange={(e) =>
-                setEditing({ ...editing, category: e.target.value })
+                setEditing({
+                  ...editing,
+                  category: e.target.value
+                })
               }
               placeholder="Categoría"
               className="w-full rounded-2xl border border-slate-500 p-4 text-lg text-slate-950"
@@ -170,7 +213,10 @@ export default function DashboardPage() {
             <select
               value={editing.mode || 'Realiza'}
               onChange={(e) =>
-                setEditing({ ...editing, mode: e.target.value })
+                setEditing({
+                  ...editing,
+                  mode: e.target.value
+                })
               }
               className="w-full rounded-2xl border border-slate-500 p-4 text-lg text-slate-950"
             >
@@ -182,7 +228,10 @@ export default function DashboardPage() {
               type="date"
               value={editing.procedure_date || ''}
               onChange={(e) =>
-                setEditing({ ...editing, procedure_date: e.target.value })
+                setEditing({
+                  ...editing,
+                  procedure_date: e.target.value
+                })
               }
               className="w-full rounded-2xl border border-slate-500 p-4 text-lg text-slate-950"
             />
@@ -190,7 +239,10 @@ export default function DashboardPage() {
             <input
               value={editing.tutor || ''}
               onChange={(e) =>
-                setEditing({ ...editing, tutor: e.target.value })
+                setEditing({
+                  ...editing,
+                  tutor: e.target.value
+                })
               }
               placeholder="Tutor"
               className="w-full rounded-2xl border border-slate-500 p-4 text-lg text-slate-950"
@@ -199,7 +251,10 @@ export default function DashboardPage() {
             <textarea
               value={editing.comments || ''}
               onChange={(e) =>
-                setEditing({ ...editing, comments: e.target.value })
+                setEditing({
+                  ...editing,
+                  comments: e.target.value
+                })
               }
               rows={3}
               placeholder="Comentarios"
@@ -208,6 +263,7 @@ export default function DashboardPage() {
 
             <div className="grid grid-cols-2 gap-3">
               <button
+                type="button"
                 onClick={saveEdit}
                 className="bg-slate-900 text-white rounded-2xl p-4 font-semibold"
               >
@@ -215,6 +271,7 @@ export default function DashboardPage() {
               </button>
 
               <button
+                type="button"
                 onClick={() => setEditing(null)}
                 className="bg-slate-200 text-slate-900 rounded-2xl p-4 font-semibold"
               >
@@ -224,117 +281,146 @@ export default function DashboardPage() {
           </div>
         )}
 
-        <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200">
-          <h2 className="text-2xl font-bold mb-4 text-slate-950 text-center">
-            Procedimientos recientes
-          </h2>
+        {section === 'recent' && (
+          <section className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200">
+            <h2 className="text-2xl font-bold mb-4 text-slate-950 text-center">
+              Procedimientos recientes
+            </h2>
 
-          <div className="space-y-3">
-            {logsSinAsiste.map((procedure) => (
-              <div
-                key={procedure.id}
-                className="border border-slate-300 rounded-2xl p-4 space-y-3"
-              >
-                <div className="flex justify-between gap-4">
-                  <div>
-                    <h3 className="font-semibold text-lg text-slate-950">
-                      {procedure.procedure_name}
-                    </h3>
+            <div className="space-y-3">
+              {logsSinAsiste.map((procedure) => (
+                <div
+                  key={procedure.id}
+                  className="border border-slate-300 rounded-2xl p-4 space-y-3"
+                >
+                  <div className="flex justify-between gap-4">
+                    <div>
+                      <h3 className="font-semibold text-lg text-slate-950">
+                        {procedure.procedure_name}
+                      </h3>
 
-                    <p className="text-slate-800">
-                      {procedure.rotation}
-                    </p>
+                      <p className="text-slate-800">
+                        {procedure.rotation}
+                      </p>
 
-                    <p className="text-slate-800 text-sm">
-                      Tutor: {procedure.tutor}
-                    </p>
+                      <p className="text-slate-800 text-sm">
+                        Tutor: {procedure.tutor}
+                      </p>
 
-                    <p className="text-slate-800 text-sm">
-                      Fecha: {procedure.procedure_date}
-                    </p>
+                      <p className="text-slate-800 text-sm">
+                        Fecha: {procedure.procedure_date}
+                      </p>
+                    </div>
+
+                    <span className="bg-slate-100 text-slate-900 rounded-xl px-3 py-1 text-sm h-fit">
+                      {procedure.mode}
+                    </span>
                   </div>
 
-                  <span className="bg-slate-100 text-slate-900 rounded-xl px-3 py-1 text-sm h-fit">
-                    {procedure.mode}
-                  </span>
+                  {procedure.comments && (
+                    <div className="bg-slate-50 rounded-2xl p-3 border border-slate-200">
+                      <p className="text-sm font-semibold text-slate-900 mb-1">
+                        Comentarios
+                      </p>
+
+                      <p className="text-slate-800 whitespace-pre-wrap">
+                        {procedure.comments}
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setEditing(procedure)}
+                      className="bg-slate-200 text-slate-900 rounded-2xl p-3 font-semibold"
+                    >
+                      Editar
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => deleteProcedure(procedure.id)}
+                      className="bg-red-100 text-red-800 rounded-2xl p-3 font-semibold"
+                    >
+                      Borrar
+                    </button>
+                  </div>
                 </div>
+              ))}
 
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    onClick={() => setEditing(procedure)}
-                    className="bg-slate-200 text-slate-900 rounded-2xl p-3 font-semibold"
-                  >
-                    Editar
-                  </button>
+              {logsSinAsiste.length === 0 && (
+                <p className="text-slate-800 text-center">
+                  Aún no hay procedimientos registrados.
+                </p>
+              )}
+            </div>
+          </section>
+        )}
 
-                  <button
-                    onClick={() => deleteProcedure(procedure.id)}
-                    className="bg-red-100 text-red-800 rounded-2xl p-3 font-semibold"
-                  >
-                    Borrar
-                  </button>
+        {section === 'progress' && (
+          <section className="space-y-6">
+            <h2 className="text-3xl font-bold text-slate-950 text-center">
+              Progreso por procedimiento
+            </h2>
+
+            {procedures.map((category) => (
+              <div key={category.category} className="space-y-4">
+                <h3 className="text-xl font-semibold text-slate-900 text-center">
+                  {category.category}
+                </h3>
+
+                <div className="space-y-3">
+                  {category.items.map((item) => {
+                    const performCurrent = logsSinAsiste.filter(
+                      (p) =>
+                        p.procedure_name === item.name &&
+                        p.mode === 'Realiza'
+                    ).length
+
+                    const observeCurrent = logsSinAsiste.filter(
+                      (p) =>
+                        p.procedure_name === item.name &&
+                        p.mode === 'Observa'
+                    ).length
+
+                    return (
+                      <ProgressCard
+                        key={item.name}
+                        name={item.name}
+                        performCurrent={performCurrent}
+                        performRequired={item.min_perform}
+                        observeCurrent={observeCurrent}
+                        observeRequired={item.min_observe}
+                      />
+                    )
+                  })}
                 </div>
               </div>
             ))}
-
-            {logsSinAsiste.length === 0 && (
-              <p className="text-slate-800 text-center">
-                Aún no hay procedimientos registrados.
-              </p>
-            )}
-          </div>
-        </div>
-
-        <div className="space-y-6">
-          <h2 className="text-3xl font-bold text-slate-950 text-center">
-            Progreso por procedimiento
-          </h2>
-
-          {procedures.map((category) => (
-            <div key={category.category} className="space-y-4">
-              <h3 className="text-xl font-semibold text-slate-900 text-center">
-                {category.category}
-              </h3>
-
-              <div className="space-y-3">
-                {category.items.map((item) => {
-                  const performCurrent = logsSinAsiste.filter(
-                    (p) =>
-                      p.procedure_name === item.name &&
-                      p.mode === 'Realiza'
-                  ).length
-
-                  const observeCurrent = logsSinAsiste.filter(
-                    (p) =>
-                      p.procedure_name === item.name &&
-                      p.mode === 'Observa'
-                  ).length
-
-                  return (
-                    <ProgressCard
-                      key={item.name}
-                      name={item.name}
-                      performCurrent={performCurrent}
-                      performRequired={item.min_perform}
-                      observeCurrent={observeCurrent}
-                      observeRequired={item.min_observe}
-                    />
-                  )
-                })}
-              </div>
-            </div>
-          ))}
-        </div>
+          </section>
+        )}
       </div>
     </main>
   )
 }
 
-function Stat({ title, value }: { title: string; value: number }) {
+function Stat({
+  title,
+  value
+}: {
+  title: string
+  value: number
+}) {
   return (
     <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 text-center">
-      <p className="text-slate-800 text-sm md:text-base">{title}</p>
-      <h2 className="text-4xl font-bold text-slate-950">{value}</h2>
+      <p className="text-slate-800 text-sm md:text-base">
+        {title}
+      </p>
+
+      <h2 className="text-4xl font-bold text-slate-950">
+        {value}
+      </h2>
     </div>
   )
 }
