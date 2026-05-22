@@ -47,7 +47,7 @@ export default function HomePage() {
 
           <div className="flex justify-center pt-2">
             <img
-              src="/logo.png"
+              src="/logo.jpg"
               alt="Logo"
               className="w-full max-w-sm md:max-w-md"
             />
