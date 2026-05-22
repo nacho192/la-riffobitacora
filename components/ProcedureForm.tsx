@@ -78,16 +78,13 @@ export default function ProcedureForm() {
       return
     }
 
-    const rows = Array.from({ length: repeatCount }, (_, index) => ({
+    const rows = Array.from({ length: repeatCount }, () => ({
       year: form.year,
       rotation: form.rotation,
       tutor: form.tutor,
       mode: form.mode,
       procedure_date: form.procedure_date,
-      comments:
-        repeatCount > 1
-          ? `${form.comments || ''}${form.comments ? '\n' : ''}Registro repetido ${index + 1}/${repeatCount}`
-          : form.comments,
+      comments: form.comments,
       category: selectedCategory,
       procedure_name: procedureToSave,
       user_id: user.id,
