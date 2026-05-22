@@ -1,6 +1,8 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
+import { supabase } from '@/lib/supabase'
+
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 
@@ -9,147 +11,310 @@ import {
   Packer,
   Paragraph,
   Table,
-  TableRow,
   TableCell,
-  WidthType,
+  TableRow,
   TextRun,
+  WidthType,
   AlignmentType,
-  PageOrientation,
-  TableLayoutType,
+  HeadingLevel,
   ImageRun
 } from 'docx'
 
-import { supabase } from '@/lib/supabase'
-
-const TABLE_WIDTH = 14400
+import { saveAs } from 'file-saver'
 
 export default function ExportarPage() {
-  const [loading, setLoading] = useState(false)
-  const [status, setStatus] = useState('')
+  const [data, setData] = useState<any[]>([])
+  const [residentName, setResidentName] = useState('')
+  const [loading, setLoading] = useState(true)
 
-  const lastPress = useRef(0)
+  useEffect(() => {
+    loadData()
+  }, [])
 
-  async function getData() {
+  async function loadData() {
     const {
       data: { user }
     } = await supabase.auth.getUser()
 
     if (!user) {
-      alert('Debes iniciar sesión')
       window.location.href = '/login'
-      return null
+      return
     }
+
+    setResidentName(
+      user.user_metadata?.full_name ||
+        user.user_metadata?.name ||
+        user.email ||
+        ''
+    )
 
     const { data, error } = await supabase
       .from('procedures_log')
       .select('*')
       .eq('user_id', user.id)
-      .order('year', { ascending: true })
-      .order('procedure_date', { ascending: true })
+      .order('procedure_date', { ascending: false })
 
     if (error) {
       alert(error.message)
-      return null
-    }
-
-    return {
-      data: data || [],
-      user
-    }
-  }
-
-  async function loadLogo() {
-    const response = await fetch('/logo.jpg')
-
-    if (!response.ok) {
-      throw new Error('No se pudo cargar logo.jpg')
-    }
-
-    return await response.arrayBuffer()
-  }
-
-  async function exportPDF() {
-    setLoading(true)
-    setStatus('Generando PDF...')
-
-    const result = await getData()
-
-    if (!result) {
-      setLoading(false)
       return
     }
 
-    const { data, user } = result
+    setData(data || [])
+    setLoading(false)
+  }
 
-    const residentName =
-      data?.[0]?.resident_name ||
-      user.user_metadata?.full_name ||
-      user.email ||
-      ''
+  async function loadLogo() {
+    try {
+      const response = await fetch('/logo.jpg')
+      return await response.arrayBuffer()
+    } catch {
+      return null
+    }
+  }
+
+  async function exportWord() {
+    const logoBuffer = await loadLogo()
+
+    const rotationName =
+      [...new Set(data.map((item: any) => item.rotation).filter(Boolean))].join(', ') ||
+      'Sin rotación'
+
+    const doc = new Document({
+      sections: [
+        {
+          children: [
+            ...(logoBuffer
+              ? [
+                  new Paragraph({
+                    alignment: AlignmentType.RIGHT,
+                    children: [
+                      new ImageRun({
+                        type: 'jpg',
+                        data: logoBuffer,
+                        transformation: {
+                          width: 120,
+                          height: 120
+                        }
+                      })
+                    ]
+                  })
+                ]
+              : []),
+
+            new Paragraph({
+              alignment: AlignmentType.CENTER,
+              heading: HeadingLevel.TITLE,
+              children: [
+                new TextRun({
+                  text: 'Bitácora de Procedimientos',
+                  bold: true,
+                  size: 36
+                })
+              ]
+            }),
+
+            new Paragraph({
+              alignment: AlignmentType.CENTER,
+              children: [
+                new TextRun({
+                  text: 'Medicina Física y Rehabilitación',
+                  italics: true,
+                  size: 28
+                })
+              ]
+            }),
+
+            new Paragraph({
+              text: `Residente: ${residentName}`
+            }),
+
+            new Paragraph({
+              text: `Rotación: ${rotationName}`
+            }),
+
+            new Paragraph({
+              text: `Fecha de exportación: ${new Date().toLocaleDateString('es-CL')}`
+            }),
+
+            new Paragraph({
+              text: ''
+            }),
+
+            new Table({
+              width: {
+                size: 100,
+                type: WidthType.PERCENTAGE
+              },
+
+              rows: [
+                new TableRow({
+                  children: [
+                    'Fecha',
+                    'Procedimiento',
+                    'Categoría',
+                    'Modalidad',
+                    'Tutor',
+                    'Rotación',
+                    'Comentarios'
+                  ].map(
+                    (header) =>
+                      new TableCell({
+                        children: [
+                          new Paragraph({
+                            children: [
+                              new TextRun({
+                                text: header,
+                                bold: true
+                              })
+                            ]
+                          })
+                        ]
+                      })
+                  )
+                }),
+
+                ...data.map(
+                  (item) =>
+                    new TableRow({
+                      children: [
+                        item.procedure_date || '',
+                        item.procedure_name || '',
+                        item.category || '',
+                        item.mode || '',
+                        item.tutor || '',
+                        item.rotation || '',
+                        item.comments || ''
+                      ].map(
+                        (value) =>
+                          new TableCell({
+                            children: [
+                              new Paragraph(String(value))
+                            ]
+                          })
+                      )
+                    })
+                )
+              ]
+            })
+          ]
+        }
+      ]
+    })
+
+    const blob = await Packer.toBlob(doc)
+
+    saveAs(blob, 'Bitacora-de-Procedimientos.docx')
+  }
+
+  async function exportPDF() {
+    const rotationName =
+      [...new Set(data.map((item: any) => item.rotation).filter(Boolean))].join(', ') ||
+      'Sin rotación'
 
     const doc = new jsPDF({
-      orientation: 'portrait',
+      orientation: 'landscape',
       unit: 'mm',
       format: 'a4'
     })
 
     try {
-      const logoResponse = await fetch('/logo.jpg')
-      const logoBlob = await logoResponse.blob()
+      const response = await fetch('/logo.jpg')
+      const blob = await response.blob()
 
       const reader = new FileReader()
 
-      reader.onloadend = () => {
+      reader.onloadend = function () {
         const base64data = reader.result as string
 
-        doc.addImage(base64data, 'JPEG', 160, 10, 35, 35)
+        doc.addImage(
+          base64data,
+          'JPEG',
+          240,
+          10,
+          35,
+          35
+        )
 
-        buildPdfContent(doc, data, residentName)
+        finalizePdf(doc, rotationName)
       }
 
-      reader.readAsDataURL(logoBlob)
+      reader.readAsDataURL(blob)
     } catch {
-      buildPdfContent(doc, data, residentName)
+      finalizePdf(doc, rotationName)
     }
   }
 
-  function buildPdfContent(
-    doc: jsPDF,
-    data: any[],
-    residentName: string
-  ) {
+  function finalizePdf(doc: jsPDF, rotationName: string) {
     doc.setFontSize(20)
-    doc.text('Bitácora de Procedimientos', 14, 20)
 
-    doc.setFontSize(12)
-    doc.text('Medicina Física y Rehabilitación', 14, 28)
+    doc.text(
+      'Bitácora de Procedimientos',
+      148,
+      18,
+      {
+        align: 'center'
+      }
+    )
 
-    doc.setFontSize(10)
-    doc.text(`Residente: ${residentName}`, 14, 40)
+    doc.setFontSize(13)
+
+    doc.text(
+      'Medicina Física y Rehabilitación',
+      148,
+      26,
+      {
+        align: 'center'
+      }
+    )
+
+    doc.setFontSize(11)
+
+    doc.text(
+      `Residente: ${residentName}`,
+      14,
+      40
+    )
+
+    doc.text(
+      `Rotación: ${rotationName}`,
+      14,
+      46
+    )
+
+    doc.text(
+      `Fecha de exportación: ${new Date().toLocaleDateString('es-CL')}`,
+      14,
+      52
+    )
 
     autoTable(doc, {
-      startY: 48,
+      startY: 60,
 
       head: [[
         'Fecha',
         'Procedimiento',
+        'Categoría',
         'Modalidad',
         'Tutor',
+        'Rotación',
         'Comentarios'
       ]],
 
-      body: data.map((item: any) => [
+      body: data.map((item) => [
         item.procedure_date || '',
         item.procedure_name || '',
+        item.category || '',
         item.mode || '',
         item.tutor || '',
+        item.rotation || '',
         item.comments || ''
       ]),
 
       styles: {
         fontSize: 8,
         cellPadding: 2,
-        overflow: 'linebreak'
+        overflow: 'linebreak',
+        valign: 'top'
       },
 
       headStyles: {
@@ -159,276 +324,66 @@ export default function ExportarPage() {
       columnStyles: {
         0: { cellWidth: 20 },
         1: { cellWidth: 45 },
-        2: { cellWidth: 22 },
-        3: { cellWidth: 35 },
-        4: { cellWidth: 60 }
+        2: { cellWidth: 40 },
+        3: { cellWidth: 20 },
+        4: { cellWidth: 35 },
+        5: { cellWidth: 40 },
+        6: { cellWidth: 60 }
       },
 
       margin: {
-        left: 10,
-        right: 10
+        left: 8,
+        right: 8
       }
     })
 
-    const finalY = (doc as any).lastAutoTable?.finalY || 200
-
-    doc.text('Firma docente a cargo:', 14, finalY + 20)
-    doc.line(14, finalY + 32, 90, finalY + 32)
-
     doc.save('Bitacora-de-Procedimientos.pdf')
-
-    setStatus('PDF generado')
-    setLoading(false)
   }
 
-  async function exportWord() {
-    setLoading(true)
-    setStatus('Generando Word...')
-
-    const result = await getData()
-
-    if (!result) {
-      setLoading(false)
-      return
-    }
-
-    const { data, user } = result
-
-    const residentName =
-      data?.[0]?.resident_name ||
-      user.user_metadata?.full_name ||
-      user.email ||
-      ''
-
-    let logoBuffer: ArrayBuffer | null = null
-
-    try {
-      logoBuffer = await loadLogo()
-    } catch {
-      logoBuffer = null
-    }
-
-    const rows = [
-      new TableRow({
-        children: [
-          headerCell('Fecha', 1500),
-          headerCell('Procedimiento', 3600),
-          headerCell('Modalidad', 1500),
-          headerCell('Tutor', 2600),
-          headerCell('Comentarios', 5200)
-        ]
-      }),
-
-      ...data.map((item: any) =>
-        new TableRow({
-          children: [
-            cell(item.procedure_date || '', 1500),
-            cell(item.procedure_name || '', 3600),
-            cell(item.mode || '', 1500),
-            cell(item.tutor || '', 2600),
-            cell(item.comments || '', 5200)
-          ]
-        })
-      )
-    ]
-
-    const children = [
-      new Paragraph({
-        children: [
-          new TextRun({
-            text: 'Bitácora de Procedimientos',
-            bold: true,
-            size: 34
-          })
-        ]
-      }),
-
-      new Paragraph({
-        children: [
-          new TextRun({
-            text: 'Medicina Física y Rehabilitación',
-            size: 24
-          })
-        ]
-      }),
-
-      ...(logoBuffer
-        ? [
-            new Paragraph({
-              alignment: AlignmentType.RIGHT,
-              children: [
-                new ImageRun({
-                  type: 'jpg',
-                  data: logoBuffer,
-                  transformation: {
-                    width: 120,
-                    height: 120
-                  }
-                })
-              ]
-            })
-          ]
-        : []),
-
-      new Paragraph({
-        text: `Residente: ${residentName}`
-      }),
-
-      new Paragraph({
-        text: ''
-      }),
-
-      new Table({
-        layout: TableLayoutType.FIXED,
-
-        width: {
-          size: TABLE_WIDTH,
-          type: WidthType.DXA
-        },
-
-        rows
-      }),
-
-      new Paragraph({
-        text: ''
-      }),
-
-      new Paragraph({
-        text: 'Firma docente a cargo:'
-      }),
-
-      new Paragraph({
-        text: ''
-      }),
-
-      new Paragraph({
-        text: '________________________________________'
-      })
-    ]
-
-    const doc = new Document({
-      sections: [
-        {
-          properties: {
-            page: {
-              size: {
-                orientation: PageOrientation.PORTRAIT
-              }
-            }
-          },
-
-          children
-        }
-      ]
-    })
-
-    const blob = await Packer.toBlob(doc)
-    const url = URL.createObjectURL(blob)
-
-    const link = document.createElement('a')
-
-    link.href = url
-    link.download = 'Bitacora-de-Procedimientos.docx'
-
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-
-    URL.revokeObjectURL(url)
-
-    setStatus('Word generado')
-    setLoading(false)
-  }
-
-  function safePress(fn: () => void | Promise<void>) {
-    const now = Date.now()
-
-    if (now - lastPress.current < 1200) return
-
-    lastPress.current = now
-
-    fn()
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-slate-100 p-6 flex items-center justify-center">
+        <p className="text-slate-900 text-lg font-semibold">
+          Cargando...
+        </p>
+      </main>
+    )
   }
 
   return (
-    <main className="min-h-screen pb-28 bg-slate-100 p-6">
-      <div className="max-w-2xl mx-auto">
-        <div className="bg-white rounded-3xl p-8 space-y-6">
-          <div>
-            <h1 className="text-4xl font-bold text-slate-900">
-              Exportar
-            </h1>
+    <main className="min-h-screen pb-28 bg-slate-100 p-6 font-[Aptos,Inter,-apple-system,BlinkMacSystemFont,Segoe_UI,sans-serif]">
+      <div className="max-w-2xl mx-auto space-y-6">
+        <div className="text-center space-y-2">
+          <h1 className="text-4xl font-bold text-slate-950">
+            Exportar
+          </h1>
 
-            <p className="text-slate-700 mt-2">
-              Para mejor compatibilidad se recomienda abrir el documento en computador
-  o exportarlo como PDF. 
-            </p>
-          </div>
+          <p className="text-slate-700 text-lg">
+            Descarga tu bitácora en Word o PDF.
+          </p>
+        </div>
 
+        <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 space-y-4">
           <button
-            type="button"
-            onClick={() => safePress(exportWord)}
+            onClick={exportWord}
             className="w-full bg-slate-900 text-white rounded-2xl p-5 text-xl font-semibold"
           >
-            {loading ? 'Generando...' : 'Exportar Word'}
+            Exportar a Word
           </button>
 
           <button
-            type="button"
-            onClick={() => safePress(exportPDF)}
+            onClick={exportPDF}
             className="w-full bg-red-700 text-white rounded-2xl p-5 text-xl font-semibold"
           >
-            {loading ? 'Generando...' : 'Exportar PDF'}
+            Exportar a PDF
           </button>
 
-          {status && (
-            <p className="text-slate-700 text-sm">
-              {status}
-            </p>
-          )}
+          <p className="text-sm text-slate-700 text-center pt-2">
+            Para mejor compatibilidad se recomienda abrir el documento en computador
+            o exportarlo como PDF.
+          </p>
         </div>
       </div>
     </main>
   )
-}
-
-function headerCell(text: string, width: number) {
-  return new TableCell({
-    width: {
-      size: width,
-      type: WidthType.DXA
-    },
-
-    children: [
-      new Paragraph({
-        children: [
-          new TextRun({
-            text,
-            bold: true,
-            size: 18
-          })
-        ]
-      })
-    ]
-  })
-}
-
-function cell(text: string, width: number) {
-  return new TableCell({
-    width: {
-      size: width,
-      type: WidthType.DXA
-    },
-
-    children: [
-      new Paragraph({
-        children: [
-          new TextRun({
-            text,
-            size: 16
-          })
-        ]
-      })
-    ]
-  })
 }
