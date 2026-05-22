@@ -1,35 +1,35 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import './globals.css'
 
-import BottomNav from '@/components/BottomNav'
-
 export const metadata: Metadata = {
+  title: 'Bitácora',
+  description: 'Bitácora digital de procedimientos para fisiatría',
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    title: 'Bitácora',
+    statusBarStyle: 'default'
+  },
+  icons: {
+    icon: '/icon-192.png',
+    apple: '/apple-icon.png'
+  }
+}
 
-  title: 'La Riffobitácora',
-
-  description: 'Bitácora de procedimientos de fisiatría UDD',
-
-  manifest: '/manifest.json'
+export const viewport: Viewport = {
+  themeColor: '#071B34'
 }
 
 export default function RootLayout({
-  children,
-}: Readonly<{
+  children
+}: {
   children: React.ReactNode
-}>) {
-
+}) {
   return (
-
     <html lang="es">
-
       <body>
-
         {children}
-
-        <BottomNav />
-
       </body>
-
     </html>
   )
 }

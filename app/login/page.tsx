@@ -45,7 +45,7 @@ export default function LoginPage() {
         >
           <div>
             <h1 className="text-4xl font-bold text-slate-950">
-              La Riffobitácora
+              Bitácora de Procedimientos
             </h1>
 
             <p className="text-slate-900 mt-2 text-lg font-medium">
