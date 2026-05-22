@@ -47,7 +47,7 @@ export default function HomePage() {
   <img
     src="/logo.png"
     alt="Logo"
-    className="w-72 md:w-80 opacity-95"
+    className="w-80 md:w-96"
   />
 </div>
         </section>
