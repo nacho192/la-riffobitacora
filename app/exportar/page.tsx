@@ -20,8 +20,6 @@ import {
   ImageRun
 } from 'docx'
 
-import { saveAs } from 'file-saver'
-
 export default function ExportarPage() {
   const [data, setData] = useState<any[]>([])
   const [residentName, setResidentName] = useState('')
@@ -75,10 +73,6 @@ export default function ExportarPage() {
   async function exportWord() {
     const logoBuffer = await loadLogo()
 
-    const rotationName =
-      [...new Set(data.map((item: any) => item.rotation).filter(Boolean))].join(', ') ||
-      'Sin rotación'
-
     const doc = new Document({
       sections: [
         {
@@ -126,10 +120,6 @@ export default function ExportarPage() {
 
             new Paragraph({
               text: `Residente: ${residentName}`
-            }),
-
-            new Paragraph({
-              text: `Rotación: ${rotationName}`
             }),
 
             new Paragraph({
@@ -195,6 +185,22 @@ export default function ExportarPage() {
                     })
                 )
               ]
+            }),
+
+            new Paragraph({
+              text: ''
+            }),
+
+            new Paragraph({
+              text: 'Firma docente a cargo:'
+            }),
+
+            new Paragraph({
+              text: ''
+            }),
+
+            new Paragraph({
+              text: '________________________________________'
             })
           ]
         }
@@ -203,14 +209,20 @@ export default function ExportarPage() {
 
     const blob = await Packer.toBlob(doc)
 
-    saveAs(blob, 'Bitacora-de-Procedimientos.docx')
+    const url = window.URL.createObjectURL(blob)
+
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'Bitacora-de-Procedimientos.docx'
+
+    document.body.appendChild(a)
+    a.click()
+
+    window.URL.revokeObjectURL(url)
+    document.body.removeChild(a)
   }
 
   async function exportPDF() {
-    const rotationName =
-      [...new Set(data.map((item: any) => item.rotation).filter(Boolean))].join(', ') ||
-      'Sin rotación'
-
     const doc = new jsPDF({
       orientation: 'landscape',
       unit: 'mm',
@@ -235,16 +247,16 @@ export default function ExportarPage() {
           35
         )
 
-        finalizePdf(doc, rotationName)
+        finalizePdf(doc)
       }
 
       reader.readAsDataURL(blob)
     } catch {
-      finalizePdf(doc, rotationName)
+      finalizePdf(doc)
     }
   }
 
-  function finalizePdf(doc: jsPDF, rotationName: string) {
+  function finalizePdf(doc: jsPDF) {
     doc.setFontSize(20)
 
     doc.text(
@@ -276,19 +288,13 @@ export default function ExportarPage() {
     )
 
     doc.text(
-      `Rotación: ${rotationName}`,
+      `Fecha de exportación: ${new Date().toLocaleDateString('es-CL')}`,
       14,
       46
     )
 
-    doc.text(
-      `Fecha de exportación: ${new Date().toLocaleDateString('es-CL')}`,
-      14,
-      52
-    )
-
     autoTable(doc, {
-      startY: 60,
+      startY: 54,
 
       head: [[
         'Fecha',
@@ -337,6 +343,21 @@ export default function ExportarPage() {
       }
     })
 
+    const finalY = (doc as any).lastAutoTable?.finalY || 170
+
+    doc.text(
+      'Firma docente a cargo:',
+      14,
+      finalY + 16
+    )
+
+    doc.line(
+      14,
+      finalY + 26,
+      95,
+      finalY + 26
+    )
+
     doc.save('Bitacora-de-Procedimientos.pdf')
   }
 
@@ -365,6 +386,7 @@ export default function ExportarPage() {
 
         <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 space-y-4">
           <button
+            type="button"
             onClick={exportWord}
             className="w-full bg-slate-900 text-white rounded-2xl p-5 text-xl font-semibold"
           >
@@ -372,6 +394,7 @@ export default function ExportarPage() {
           </button>
 
           <button
+            type="button"
             onClick={exportPDF}
             className="w-full bg-red-700 text-white rounded-2xl p-5 text-xl font-semibold"
           >
