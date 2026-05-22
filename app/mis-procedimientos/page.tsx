@@ -1,19 +1,36 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import ProcedureForm from '@/components/ProcedureForm'
 import { supabase } from '@/lib/supabase'
 
 export default function MisProcedimientosPage() {
-  const [logs, setLogs] = useState<any[]>([])
+  const [items, setItems] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
   const [editing, setEditing] = useState<any | null>(null)
 
+  const [form, setForm] = useState({
+    title: '',
+    category: '',
+    technique: '',
+    dose: '',
+    materials: '',
+    tips: '',
+    references: ''
+  })
+
   useEffect(() => {
-    loadProcedures()
+    loadItems()
   }, [])
 
-  async function loadProcedures() {
+  function updateField(field: string, value: string) {
+    setForm((prev) => ({
+      ...prev,
+      [field]: value
+    }))
+  }
+
+  async function loadItems() {
     const {
       data: { user }
     } = await supabase.auth.getUser()
@@ -24,10 +41,10 @@ export default function MisProcedimientosPage() {
     }
 
     const { data, error } = await supabase
-      .from('procedures_log')
+      .from('personal_procedures')
       .select('*')
       .eq('user_id', user.id)
-      .order('procedure_date', { ascending: false })
+      .order('created_at', { ascending: false })
 
     if (error) {
       alert(error.message)
@@ -35,17 +52,74 @@ export default function MisProcedimientosPage() {
       return
     }
 
-    setLogs(data || [])
+    setItems(data || [])
     setLoading(false)
   }
 
-  async function savePrivateNotes() {
+  async function saveItem() {
+    if (!form.title) {
+      alert('Ingresa el nombre del procedimiento')
+      return
+    }
+
+    setSaving(true)
+
+    const {
+      data: { user }
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+      alert('Debes iniciar sesión')
+      window.location.href = '/login'
+      return
+    }
+
+    const payload = {
+      ...form,
+      user_id: user.id,
+      resident_name:
+        user.user_metadata?.full_name ||
+        user.user_metadata?.name ||
+        user.email
+    }
+
+    const { error } = await supabase
+      .from('personal_procedures')
+      .insert([payload])
+
+    setSaving(false)
+
+    if (error) {
+      alert(error.message)
+      return
+    }
+
+    setForm({
+      title: '',
+      category: '',
+      technique: '',
+      dose: '',
+      materials: '',
+      tips: '',
+      references: ''
+    })
+
+    loadItems()
+  }
+
+  async function saveEdit() {
     if (!editing) return
 
     const { error } = await supabase
-      .from('procedures_log')
+      .from('personal_procedures')
       .update({
-        private_notes: editing.private_notes
+        title: editing.title,
+        category: editing.category,
+        technique: editing.technique,
+        dose: editing.dose,
+        materials: editing.materials,
+        tips: editing.tips,
+        references: editing.references
       })
       .eq('id', editing.id)
 
@@ -55,33 +129,112 @@ export default function MisProcedimientosPage() {
     }
 
     setEditing(null)
-    loadProcedures()
+    loadItems()
+  }
+
+  async function deleteItem(id: string) {
+    const ok = confirm('¿Seguro que quieres borrar este procedimiento?')
+
+    if (!ok) return
+
+    const { error } = await supabase
+      .from('personal_procedures')
+      .delete()
+      .eq('id', id)
+
+    if (error) {
+      alert(error.message)
+      return
+    }
+
+    loadItems()
   }
 
   return (
-    <main className="min-h-screen pb-28 bg-slate-100 p-6 font-[Aptos,Inter,-apple-system,BlinkMacSystemFont,Segoe_UI,sans-serif]">
-      <div className="max-w-3xl mx-auto space-y-8">
+    <main className="min-h-screen pb-32 bg-slate-100 p-6 font-[Aptos,Inter,-apple-system,BlinkMacSystemFont,Segoe_UI,sans-serif]">
+      <div className="max-w-4xl mx-auto space-y-8">
         <section className="text-center space-y-2">
           <h1 className="text-4xl font-bold text-slate-950">
             Mis procedimientos
           </h1>
 
           <p className="text-slate-700 text-lg">
-            Registra procedimientos y guarda notas técnicas personales.
+            Biblioteca personal de técnicas, dosis, materiales y tips.
           </p>
-        </section>
-
-        <section className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200">
-          <h2 className="text-2xl font-bold text-slate-950 text-center mb-6">
-            Registrar nuevo procedimiento
-          </h2>
-
-          <ProcedureForm />
         </section>
 
         <section className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 space-y-4">
           <h2 className="text-2xl font-bold text-slate-950 text-center">
-            Notas técnicas guardadas
+            Agregar procedimiento personal
+          </h2>
+
+          <input
+            value={form.title}
+            onChange={(e) => updateField('title', e.target.value)}
+            placeholder="Nombre del procedimiento"
+            className="w-full rounded-2xl border border-slate-500 bg-white p-4 text-lg text-slate-950"
+          />
+
+          <input
+            value={form.category}
+            onChange={(e) => updateField('category', e.target.value)}
+            placeholder="Categoría"
+            className="w-full rounded-2xl border border-slate-500 bg-white p-4 text-lg text-slate-950"
+          />
+
+          <textarea
+            value={form.technique}
+            onChange={(e) => updateField('technique', e.target.value)}
+            rows={4}
+            placeholder="Técnica / pasos"
+            className="w-full rounded-2xl border border-slate-500 bg-white p-4 text-lg text-slate-950"
+          />
+
+          <textarea
+            value={form.dose}
+            onChange={(e) => updateField('dose', e.target.value)}
+            rows={3}
+            placeholder="Dosis"
+            className="w-full rounded-2xl border border-slate-500 bg-white p-4 text-lg text-slate-950"
+          />
+
+          <textarea
+            value={form.materials}
+            onChange={(e) => updateField('materials', e.target.value)}
+            rows={3}
+            placeholder="Materiales"
+            className="w-full rounded-2xl border border-slate-500 bg-white p-4 text-lg text-slate-950"
+          />
+
+          <textarea
+            value={form.tips}
+            onChange={(e) => updateField('tips', e.target.value)}
+            rows={3}
+            placeholder="Tips / consideraciones"
+            className="w-full rounded-2xl border border-slate-500 bg-white p-4 text-lg text-slate-950"
+          />
+
+          <textarea
+            value={form.references}
+            onChange={(e) => updateField('references', e.target.value)}
+            rows={3}
+            placeholder="Referencias / links / notas"
+            className="w-full rounded-2xl border border-slate-500 bg-white p-4 text-lg text-slate-950"
+          />
+
+          <button
+            type="button"
+            onClick={saveItem}
+            disabled={saving}
+            className="w-full bg-slate-900 text-white rounded-2xl p-5 text-xl font-semibold"
+          >
+            {saving ? 'Guardando...' : 'Guardar procedimiento'}
+          </button>
+        </section>
+
+        <section className="space-y-4">
+          <h2 className="text-3xl font-bold text-slate-950 text-center">
+            Procedimientos guardados
           </h2>
 
           {loading && (
@@ -90,49 +243,53 @@ export default function MisProcedimientosPage() {
             </p>
           )}
 
-          {!loading && logs.length === 0 && (
+          {!loading && items.length === 0 && (
             <p className="text-center text-slate-700">
-              Aún no hay procedimientos registrados.
+              Aún no tienes procedimientos personales guardados.
             </p>
           )}
 
           <div className="space-y-4">
-            {logs.map((item) => (
+            {items.map((item) => (
               <div
                 key={item.id}
-                className="rounded-3xl border border-slate-200 p-5 space-y-3"
+                className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 space-y-4"
               >
                 <div>
-                  <h3 className="text-xl font-bold text-slate-950">
-                    {item.procedure_name}
+                  <h3 className="text-2xl font-bold text-slate-950">
+                    {item.title}
                   </h3>
 
-                  <p className="text-slate-800">
-                    {item.rotation} · {item.procedure_date}
-                  </p>
-
-                  <p className="text-slate-700 text-sm">
-                    Tutor: {item.tutor} · Modalidad: {item.mode}
-                  </p>
+                  {item.category && (
+                    <p className="text-slate-700">
+                      {item.category}
+                    </p>
+                  )}
                 </div>
 
-                <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200">
-                  <p className="text-sm font-semibold text-slate-900 mb-2">
-                    Técnica, dosis, materiales o notas personales
-                  </p>
+                <Info title="Técnica" text={item.technique} />
+                <Info title="Dosis" text={item.dose} />
+                <Info title="Materiales" text={item.materials} />
+                <Info title="Tips" text={item.tips} />
+                <Info title="Referencias" text={item.references} />
 
-                  <p className="text-slate-800 whitespace-pre-wrap">
-                    {item.private_notes || 'Sin notas privadas registradas.'}
-                  </p>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setEditing(item)}
+                    className="bg-slate-200 text-slate-900 rounded-2xl p-3 font-semibold"
+                  >
+                    Editar
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => deleteItem(item.id)}
+                    className="bg-red-100 text-red-800 rounded-2xl p-3 font-semibold"
+                  >
+                    Borrar
+                  </button>
                 </div>
-
-                <button
-                  type="button"
-                  onClick={() => setEditing(item)}
-                  className="w-full bg-slate-900 text-white rounded-2xl p-3 font-semibold"
-                >
-                  Editar notas
-                </button>
               </div>
             ))}
           </div>
@@ -141,30 +298,74 @@ export default function MisProcedimientosPage() {
         {editing && (
           <section className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 space-y-4">
             <h2 className="text-2xl font-bold text-slate-950 text-center">
-              Editar notas técnicas
+              Editar procedimiento
             </h2>
 
-            <p className="text-slate-800 font-semibold">
-              {editing.procedure_name}
-            </p>
+            <input
+              value={editing.title || ''}
+              onChange={(e) =>
+                setEditing({ ...editing, title: e.target.value })
+              }
+              className="w-full rounded-2xl border border-slate-500 p-4 text-lg text-slate-950"
+            />
+
+            <input
+              value={editing.category || ''}
+              onChange={(e) =>
+                setEditing({ ...editing, category: e.target.value })
+              }
+              className="w-full rounded-2xl border border-slate-500 p-4 text-lg text-slate-950"
+            />
 
             <textarea
-              value={editing.private_notes || ''}
+              value={editing.technique || ''}
               onChange={(e) =>
-                setEditing({
-                  ...editing,
-                  private_notes: e.target.value
-                })
+                setEditing({ ...editing, technique: e.target.value })
               }
-              rows={8}
-              placeholder="Ej: técnica, dosis, materiales, guía ecográfica, tips, complicaciones, pasos importantes..."
+              rows={4}
+              className="w-full rounded-2xl border border-slate-500 p-4 text-lg text-slate-950"
+            />
+
+            <textarea
+              value={editing.dose || ''}
+              onChange={(e) =>
+                setEditing({ ...editing, dose: e.target.value })
+              }
+              rows={3}
+              className="w-full rounded-2xl border border-slate-500 p-4 text-lg text-slate-950"
+            />
+
+            <textarea
+              value={editing.materials || ''}
+              onChange={(e) =>
+                setEditing({ ...editing, materials: e.target.value })
+              }
+              rows={3}
+              className="w-full rounded-2xl border border-slate-500 p-4 text-lg text-slate-950"
+            />
+
+            <textarea
+              value={editing.tips || ''}
+              onChange={(e) =>
+                setEditing({ ...editing, tips: e.target.value })
+              }
+              rows={3}
+              className="w-full rounded-2xl border border-slate-500 p-4 text-lg text-slate-950"
+            />
+
+            <textarea
+              value={editing.references || ''}
+              onChange={(e) =>
+                setEditing({ ...editing, references: e.target.value })
+              }
+              rows={3}
               className="w-full rounded-2xl border border-slate-500 p-4 text-lg text-slate-950"
             />
 
             <div className="grid grid-cols-2 gap-3">
               <button
                 type="button"
-                onClick={savePrivateNotes}
+                onClick={saveEdit}
                 className="bg-slate-900 text-white rounded-2xl p-4 font-semibold"
               >
                 Guardar
@@ -182,5 +383,27 @@ export default function MisProcedimientosPage() {
         )}
       </div>
     </main>
+  )
+}
+
+function Info({
+  title,
+  text
+}: {
+  title: string
+  text?: string
+}) {
+  if (!text) return null
+
+  return (
+    <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200">
+      <p className="text-sm font-bold text-slate-900 mb-1">
+        {title}
+      </p>
+
+      <p className="text-slate-800 whitespace-pre-wrap">
+        {text}
+      </p>
+    </div>
   )
 }
